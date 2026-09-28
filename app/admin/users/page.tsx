@@ -99,7 +99,7 @@ export default function UsersPage() {
   const fetchUsers = async () => {
     setIsLoading(true);
     try {
-      const res = await api.get("/admin/users");
+      const res = await api.get("/admin/users/?role=DRIVER");
       setUsers(res.data);
     } catch (err) {
       console.error("Failed to fetch users", err);
