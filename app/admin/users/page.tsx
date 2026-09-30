@@ -243,7 +243,7 @@ export default function UsersPage() {
       {/* Header */}
       <div className="flex justify-between items-end">
         <div>
-          <h1 className="text-3xl font-bold mb-2 text-zinc-900 dark:text-white">Users &amp; Drivers</h1>
+          <h1 className="text-3xl font-bold mb-2 text-zinc-900 dark:text-white">Drivers</h1>
           <p className="text-zinc-500 dark:text-zinc-400">Click any row to view full details</p>
         </div>
         <button
@@ -251,7 +251,7 @@ export default function UsersPage() {
           className="flex items-center space-x-2 bg-blue-600 hover:bg-blue-500 text-white px-4 py-2.5 rounded-xl transition-all shadow-[0_0_15px_rgba(59,130,246,0.3)]"
         >
           <Plus className="w-5 h-5" />
-          <span className="font-medium">Add User</span>
+          <span className="font-medium">Add Driver</span>
         </button>
       </div>
 
@@ -268,8 +268,6 @@ export default function UsersPage() {
                 <tr className="border-b border-zinc-200 dark:border-white/10 text-zinc-500 dark:text-zinc-400 text-sm">
                   <th className="py-4 px-6 font-medium">Name</th>
                   <th className="py-4 px-6 font-medium">Contact</th>
-                  <th className="py-4 px-6 font-medium">Role</th>
-                  <th className="py-4 px-6 font-medium">Assigned Vehicle</th>
                   <th className="py-4 px-6 font-medium">Status</th>
                   <th className="py-4 px-6 font-medium text-right">Actions</th>
                 </tr>
@@ -294,19 +292,6 @@ export default function UsersPage() {
                       </div>
                     </td>
                     <td className="py-4 px-6">
-                      <span className={roleBadge}>{u.role}</span>
-                    </td>
-                    <td className="py-4 px-6">
-                      {u.assigned_vehicle ? (
-                        <div className="flex flex-col">
-                          <span className="text-zinc-900 dark:text-white text-sm">{u.assigned_vehicle.plate_number}</span>
-                          <span className="text-xs text-zinc-500">{u.assigned_vehicle.make} {u.assigned_vehicle.model}</span>
-                        </div>
-                      ) : (
-                        <span className="text-zinc-400 dark:text-zinc-500 text-xs italic">Unassigned</span>
-                      )}
-                    </td>
-                    <td className="py-4 px-6">
                       <span className={statusBadge(u.status)}>
                         {u.status === "ACTIVE" ? <CheckCircle className="w-3 h-3" /> : <XCircle className="w-3 h-3" />}
                         {u.status}
@@ -324,7 +309,7 @@ export default function UsersPage() {
                 ))}
                 {users.length === 0 && (
                   <tr>
-                    <td colSpan={6} className="py-8 text-center text-zinc-500">No users found.</td>
+                    <td colSpan={4} className="py-8 text-center text-zinc-500">No drivers found.</td>
                   </tr>
                 )}
               </tbody>
@@ -363,7 +348,7 @@ export default function UsersPage() {
                     <UserIcon className="w-5 h-5 text-blue-600 dark:text-blue-400" />
                   </div>
                   <div>
-                    <p className="text-xs text-zinc-500 dark:text-zinc-400 font-medium uppercase tracking-wider">User Details</p>
+                    <p className="text-xs text-zinc-500 dark:text-zinc-400 font-medium uppercase tracking-wider">Driver Details</p>
                     <p className="text-sm font-semibold text-zinc-900 dark:text-white leading-tight">
                       {selectedUser?.full_name ?? "Loading…"}
                     </p>
@@ -385,13 +370,12 @@ export default function UsersPage() {
                   </div>
                 ) : selectedUser ? (
                   <>
-                    {/* Status + Role row */}
+                    {/* Status row */}
                     <div className="flex items-center gap-3 flex-wrap">
                       <span className={statusBadge(selectedUser.status)}>
                         {selectedUser.status === "ACTIVE" ? <CheckCircle className="w-3 h-3" /> : <XCircle className="w-3 h-3" />}
                         {selectedUser.status}
                       </span>
-                      <span className={roleBadge}>{selectedUser.role}</span>
                     </div>
 
                     {/* Info Cards */}
@@ -410,9 +394,9 @@ export default function UsersPage() {
                             {selectedUser.generated_code || "—"}
                           </span>
                         } />
-                        <InfoRow icon={<ShieldCheck className="w-4 h-4" />} label="User ID" value={
+                        {/* <InfoRow icon={<ShieldCheck className="w-4 h-4" />} label="User ID" value={
                           <span className="font-mono text-xs text-zinc-500 dark:text-zinc-400 break-all">{selectedUser.id}</span>
-                        } />
+                        } /> */}
                         <InfoRow icon={<Calendar className="w-4 h-4" />} label="Created" value={fmtDate(selectedUser.created_at)} />
                         <InfoRow icon={<Calendar className="w-4 h-4" />} label="Updated" value={fmtDate(selectedUser.updated_at)} />
                       </Section>
@@ -439,7 +423,7 @@ export default function UsersPage() {
                       </Section>
 
                       {/* Available Vehicles */}
-                      {(selectedUser.available_vehicles?.length ?? 0) > 0 && (
+                      {/* {(selectedUser.available_vehicles?.length ?? 0) > 0 && (
                         <Section title={`Available Vehicles (${selectedUser.available_vehicles!.length})`}>
                           <div className="space-y-2">
                             {selectedUser.available_vehicles!.map((v) => (
@@ -447,7 +431,7 @@ export default function UsersPage() {
                             ))}
                           </div>
                         </Section>
-                      )}
+                      )} */}
                     </div>
                   </>
                 ) : null}
@@ -460,7 +444,7 @@ export default function UsersPage() {
                     onClick={(e) => { openEditModal(e, selectedUser); }}
                     className="flex-1 flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-500 text-white px-4 py-2.5 rounded-xl font-medium transition-colors"
                   >
-                    <Edit className="w-4 h-4" /> Edit User
+                    <Edit className="w-4 h-4" /> Edit Driver
                   </button>
                   <button
                     onClick={(e) => handleDelete(e, selectedUser.id!)}
@@ -514,7 +498,7 @@ export default function UsersPage() {
               exit={{ opacity: 0, scale: 0.95 }}
               className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-white/10 p-6 rounded-2xl w-full max-w-lg shadow-2xl relative max-h-[90vh] overflow-y-auto"
             >
-              <h2 className="text-xl font-bold mb-4 text-zinc-900 dark:text-white">{editingUserId ? "Edit User" : "Add New User"}</h2>
+              <h2 className="text-xl font-bold mb-4 text-zinc-900 dark:text-white">{editingUserId ? "Edit Driver" : "Add New Driver"}</h2>
               {formError && (
                 <div className="mb-4 p-3 bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/30 rounded-xl text-red-700 dark:text-red-400 text-sm flex items-start space-x-2">
                   <span className="mt-0.5">⚠️</span>
@@ -545,27 +529,18 @@ export default function UsersPage() {
                   </div>
                 )}
 
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase">Role</label>
-                    <select value={formData.role} onChange={(e) => setFormData({ ...formData, role: e.target.value })} className="w-full bg-zinc-50 dark:bg-black/40 border border-zinc-200 dark:border-white/10 rounded-xl px-4 py-2 text-zinc-900 dark:text-white focus:outline-none focus:border-blue-500/50">
-                      <option value="DRIVER">DRIVER</option>
-                      <option value="ADMIN">ADMIN</option>
-                    </select>
-                  </div>
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase">Status</label>
-                    <select value={formData.status} onChange={(e) => setFormData({ ...formData, status: e.target.value })} className="w-full bg-zinc-50 dark:bg-black/40 border border-zinc-200 dark:border-white/10 rounded-xl px-4 py-2 text-zinc-900 dark:text-white focus:outline-none focus:border-blue-500/50">
-                      <option value="ACTIVE">ACTIVE</option>
-                      <option value="INACTIVE">INACTIVE</option>
-                    </select>
-                  </div>
+                <div className="space-y-1.5">
+                  <label className="text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase">Status</label>
+                  <select value={formData.status} onChange={(e) => setFormData({ ...formData, status: e.target.value })} className="w-full bg-zinc-50 dark:bg-black/40 border border-zinc-200 dark:border-white/10 rounded-xl px-4 py-2 text-zinc-900 dark:text-white focus:outline-none focus:border-blue-500/50">
+                    <option value="ACTIVE">ACTIVE</option>
+                    <option value="INACTIVE">INACTIVE</option>
+                  </select>
                 </div>
 
                 <div className="space-y-1.5 pt-2 border-t border-zinc-200 dark:border-white/10">
                   <label className="text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase">Assign Vehicle</label>
                   <select value={formData.vehicle_id || ""} onChange={(e) => setFormData({ ...formData, vehicle_id: e.target.value })} className="w-full bg-zinc-50 dark:bg-black/40 border border-zinc-200 dark:border-white/10 rounded-xl px-4 py-2 text-zinc-900 dark:text-white focus:outline-none focus:border-blue-500/50">
-                    <option value="">-- No Vehicle Assigned --</option>
+                    {/* <option value="">-- No Vehicle Assigned --</option> */}
                     {editingUserId && formData.vehicle_id && !vehicles.find((v) => v.id === formData.vehicle_id) && (
                       <option value={formData.vehicle_id}>
                         {users.find((u) => u.id === editingUserId)?.assigned_vehicle?.plate_number ?? "Current Vehicle"}{" (currently assigned)"}
@@ -587,7 +562,7 @@ export default function UsersPage() {
                     Cancel
                   </button>
                   <button type="submit" disabled={isSubmitting} className="bg-blue-600 hover:bg-blue-500 px-6 py-2 rounded-xl text-white font-medium transition-colors disabled:opacity-50">
-                    {isSubmitting ? "Saving…" : editingUserId ? "Save Changes" : "Create User"}
+                    {isSubmitting ? "Saving…" : editingUserId ? "Save Changes" : "Create Driver"}
                   </button>
                 </div>
               </form>

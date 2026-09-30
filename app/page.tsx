@@ -60,12 +60,12 @@ export default function AdminEntryPoint() {
             transition={{ duration: 0.8, ease: "easeInOut" }}
             className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-black"
           >
-            <div className="relative w-full h-full">
+            <div className="relative w-full h-full flex items-center justify-center">
               <Image
                 src="/photo1.jpg"
                 alt="Car Driver Front Splash"
                 fill
-                className="object-cover opacity-60"
+                className="object-contain opacity-60 scale-95"
                 priority
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent" />
@@ -80,7 +80,7 @@ export default function AdminEntryPoint() {
                 <h1 className="text-5xl font-extrabold tracking-tight text-white drop-shadow-lg mb-2">
                   Admin <span className="text-blue-500">Portal</span>
                 </h1>
-                <p className="text-zinc-300 text-lg tracking-wider font-light">Secure Configuration Access</p>
+                {/* <p className="text-zinc-300 text-lg tracking-wider font-light">Secure Configuration Access</p> */}
                 
                 <div className="mt-12 flex space-x-2">
                   <motion.div
@@ -175,7 +175,7 @@ export default function AdminEntryPoint() {
                     <div className="w-6 h-6 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                   ) : (
                     <>
-                      <span>Secure Login</span>
+                      <span>Login</span>
                       <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
                     </>
                   )}

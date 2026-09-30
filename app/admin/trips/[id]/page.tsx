@@ -58,7 +58,7 @@ export default function TripDetailsPage() {
         </Link>
         <div>
           <h1 className="text-3xl font-bold text-zinc-900 dark:text-white">Trip Details</h1>
-          <p className="text-zinc-500 dark:text-zinc-400">ID: {trip.id}</p>
+          {/* <p className="text-zinc-500 dark:text-zinc-400">ID: {trip.id}</p> */}
         </div>
       </div>
 
@@ -76,16 +76,20 @@ export default function TripDetailsPage() {
               <p className="text-zinc-900 dark:text-white font-medium">{trip.verification_status}</p>
             </div>
             <div>
-              <p className="text-xs text-zinc-500 uppercase">Start Date</p>
+              <p className="text-xs text-zinc-500 uppercase">Date</p>
               <p className="text-zinc-900 dark:text-white font-medium">{trip.start_date}</p>
             </div>
             <div>
               <p className="text-xs text-zinc-500 uppercase">Working Hours</p>
-              <p className="text-zinc-900 dark:text-white font-medium">{trip.working_hours} h</p>
+              <p className="text-zinc-900 dark:text-white font-medium">{trip.working_hours_formatted}</p>
             </div>
             <div>
               <p className="text-xs text-zinc-500 uppercase">KM Used</p>
               <p className="text-zinc-900 dark:text-white font-medium">{trip.km_used} km</p>
+            </div>
+            <div>
+              <p className="text-xs text-zinc-500 uppercase">Path</p>
+              <p className="text-zinc-900 dark:text-white font-medium">{trip.route_notes}</p>
             </div>
           </div>
         </div>
