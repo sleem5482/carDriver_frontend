@@ -88,7 +88,6 @@ export default function UsersPage() {
     vehicle_id: "",
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
-
   useEffect(() => {
     fetchUsers();
     fetchVehicles();
@@ -116,6 +115,7 @@ export default function UsersPage() {
       console.error("Failed to fetch vehicles", err);
     }
   };
+// console.log(selectedUser?.assigned_vehicle,"sdjflsfjlskfjlsjdlfkl")
 
   const openDetail = async (userId: string) => {
     setIsDetailOpen(true);
@@ -610,8 +610,8 @@ function VehicleCard({ v, highlight }: { v: VehicleBasic; highlight?: boolean })
         <Car className={`w-4 h-4 ${highlight ? "text-blue-600 dark:text-blue-400" : "text-zinc-500 dark:text-zinc-400"}`} />
       </div>
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-semibold text-zinc-900 dark:text-white">{v.plate_number}</p>
-        <p className="text-xs text-zinc-500">{v.make} {v.model}</p>
+        <p className="text-sm font-semibold text-zinc-900 dark:text-white">{v.make} - {v.model}</p>
+        <p className="text-xs text-zinc-500">{v.plate_number}</p>
       </div>
       {v.status && (
         <span className={`px-2 py-0.5 text-[10px] font-bold rounded-full border ${

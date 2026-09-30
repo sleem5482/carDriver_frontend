@@ -24,6 +24,7 @@ type Filters = {
   date_from: string;
   date_to: string;
   plate_number: string;
+  driver_name: string;
   status: string;
   verification_status: string;
 };
@@ -32,8 +33,17 @@ const EMPTY_FILTERS: Filters = {
   date_from: "",
   date_to: "",
   plate_number: "",
+  driver_name: "",
   status: "",
   verification_status: "",
+};
+
+const matchesDriverName = (fullName: string, query: string) => {
+  const trimmed = query.trim();
+  if (!trimmed) return true;
+  const words = trimmed.toLowerCase().split(/\s+/);
+  const name = (fullName ?? "").toLowerCase();
+  return words.every((word) => name.includes(word));
 };
 
 // ─── Badge helpers ────────────────────────────────────────────────────────────
@@ -68,6 +78,10 @@ export default function TripsPage() {
 
   const activeFilterCount = Object.values(applied).filter(Boolean).length;
 
+  const filteredTrips = trips.filter((t) =>
+    matchesDriverName(t.driver?.full_name ?? "", applied.driver_name)
+  );
+
   const fetchTrips = useCallback(async (f: Filters) => {
     setIsLoading(true);
     try {
@@ -90,7 +104,14 @@ export default function TripsPage() {
 
   useEffect(() => {
     fetchTrips(applied);
-  }, [applied, fetchTrips]);
+  }, [
+    applied.date_from,
+    applied.date_to,
+    applied.plate_number,
+    applied.status,
+    applied.verification_status,
+    fetchTrips,
+  ]);
 
   const applyFilters = () => {
     setApplied({ ...filters });
@@ -191,6 +212,21 @@ export default function TripsPage() {
                 </div>
               </div>
 
+              {/* Driver Name (client-side only) */}
+              <div className="space-y-1.5">
+                <label className={labelCls}>Driver Name</label>
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-zinc-400 pointer-events-none" />
+                  <input
+                    type="text"
+                    placeholder="e.g. John Smith"
+                    value={filters.driver_name}
+                    onChange={e => setFilters(f => ({ ...f, driver_name: e.target.value }))}
+                    className={`${inputCls} pl-8`}
+                  />
+                </div>
+              </div>
+
               {/* Trip Status */}
               <div className="space-y-1.5">
                 <label className={labelCls}>Trip Status</label>
@@ -245,6 +281,7 @@ export default function TripsPage() {
                 {applied.date_from && <Pill label={`From: ${applied.date_from}`} onRemove={() => setApplied(f => ({ ...f, date_from: "" }))} />}
                 {applied.date_to && <Pill label={`To: ${applied.date_to}`} onRemove={() => setApplied(f => ({ ...f, date_to: "" }))} />}
                 {applied.plate_number && <Pill label={`Plate: ${applied.plate_number}`} onRemove={() => setApplied(f => ({ ...f, plate_number: "" }))} />}
+                {applied.driver_name && <Pill label={`Driver: ${applied.driver_name}`} onRemove={() => setApplied(f => ({ ...f, driver_name: "" }))} />}
                 {applied.status && <Pill label={`Status: ${applied.status}`} onRemove={() => setApplied(f => ({ ...f, status: "" }))} />}
                 {applied.verification_status && <Pill label={`Verification: ${applied.verification_status}`} onRemove={() => setApplied(f => ({ ...f, verification_status: "" }))} />}
               </div>
@@ -273,7 +310,7 @@ export default function TripsPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-zinc-100 dark:divide-white/5">
-                {trips.map((t) => (
+                {filteredTrips.map((t) => (
                   <tr key={t.id} className="hover:bg-zinc-50 dark:hover:bg-white/[0.025] transition-colors">
                     {/* Date */}
                     <td className="py-3.5 px-5 text-zinc-600 dark:text-zinc-300 whitespace-nowrap">
@@ -288,10 +325,10 @@ export default function TripsPage() {
                       {t.vehicle ? (
                         <div className="flex flex-col gap-0.5">
                           <span className="font-mono font-bold text-zinc-900 dark:text-white tracking-wide">
-                            {t.vehicle.plate_number}
+                            {t.vehicle.make} <span className="font-medium">{t.vehicle.model}</span>
                           </span>
                           <span className="text-xs text-zinc-500 dark:text-zinc-400">
-                            {t.vehicle.make} <span className="font-medium">{t.vehicle.model}</span>
+                            {t.vehicle.plate_number}
                           </span>
                         </div>
                       ) : "—"}
@@ -318,7 +355,7 @@ export default function TripsPage() {
                     </td>
                   </tr>
                 ))}
-                {trips.length === 0 && (
+                {filteredTrips.length === 0 && (
                   <tr>
                     <td colSpan={6} className="py-16 text-center text-zinc-400 dark:text-zinc-500">
                       <Map className="w-10 h-10 mx-auto mb-3 opacity-30" />
