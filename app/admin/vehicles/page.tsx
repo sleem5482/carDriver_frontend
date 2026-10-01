@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Plus, Loader2, Edit2, Trash2, X, Car } from "lucide-react";
+import { Plus, Loader2, Edit2, Trash2, X, Car, BarChart2 } from "lucide-react";
+import Link from "next/link";
 import api from "../../../lib/api";
 
 type Vehicle = {
@@ -12,6 +13,7 @@ type Vehicle = {
   model: string;
   plate_number: string;
   category: string;
+  monthly_km: number | null;
   status: string;
 };
 
@@ -38,6 +40,7 @@ const emptyForm: Vehicle = {
   model: "",
   plate_number: "",
   category: "",
+  monthly_km: null,
   status: "AVAILABLE",
 };
 
@@ -76,7 +79,7 @@ export default function VehiclesPage() {
   const openEditModal = (v: Vehicle) => {
     setEditingId(v.id!);
     setFormError(null);
-    setFormData({ vehicle_type: v.vehicle_type, make: v.make, model: v.model, plate_number: v.plate_number, category: v.category, status: v.status });
+    setFormData({ vehicle_type: v.vehicle_type, make: v.make, model: v.model, plate_number: v.plate_number, category: v.category, monthly_km: v.monthly_km, status: v.status });
     setIsModalOpen(true);
   };
 
@@ -207,9 +210,11 @@ export default function VehiclesPage() {
               <thead>
                 <tr className="border-b border-zinc-100 dark:border-white/5 bg-zinc-50/80 dark:bg-white/[0.02]">
                   <th className="py-3 px-5 text-left font-semibold text-zinc-500 dark:text-zinc-400 text-xs uppercase tracking-wider">Plate</th>
-                  <th className="py-3 px-5 text-left font-semibold text-zinc-500 dark:text-zinc-400 text-xs uppercase tracking-wider">Make & Model</th>
+                  <th className="py-3 px-5 text-left font-semibold text-zinc-500 dark:text-zinc-400 text-xs uppercase tracking-wider">Model Year</th>
+                  <th className="py-3 px-5 text-left font-semibold text-zinc-500 dark:text-zinc-400 text-xs uppercase tracking-wider">Name</th>
                   <th className="py-3 px-5 text-left font-semibold text-zinc-500 dark:text-zinc-400 text-xs uppercase tracking-wider">Type</th>
                   <th className="py-3 px-5 text-left font-semibold text-zinc-500 dark:text-zinc-400 text-xs uppercase tracking-wider">Category</th>
+                  <th className="py-3 px-5 text-left font-semibold text-zinc-500 dark:text-zinc-400 text-xs uppercase tracking-wider">Monthly KM</th>
                   <th className="py-3 px-5 text-left font-semibold text-zinc-500 dark:text-zinc-400 text-xs uppercase tracking-wider">Status</th>
                   <th className="py-3 px-5 text-center font-semibold text-zinc-500 dark:text-zinc-400 text-xs uppercase tracking-wider">Available</th>
                   <th className="py-3 px-5 text-right font-semibold text-zinc-500 dark:text-zinc-400 text-xs uppercase tracking-wider">Actions</th>
@@ -230,7 +235,11 @@ export default function VehiclesPage() {
                       </td>
                       {/* Make & Model */}
                       <td className="py-3.5 px-5">
-                        <span className="text-zinc-700 dark:text-zinc-300">{v.make} <span className="text-zinc-900 dark:text-white font-medium">{v.model}</span></span>
+                        <span className="text-zinc-700 dark:text-zinc-300">{v.make}</span>
+                      </td>
+
+                      <td className="py-3.5 px-5">
+                        <span className="text-zinc-700 dark:text-zinc-300">{v.model}</span>
                       </td>
                       {/* Type */}
                       <td className="py-3.5 px-5">
@@ -239,6 +248,17 @@ export default function VehiclesPage() {
                       {/* Category */}
                       <td className="py-3.5 px-5">
                         <span className="text-zinc-500 dark:text-zinc-400">{v.category || "—"}</span>
+                      </td>
+                      {/* Monthly KM */}
+                      <td className="py-3.5 px-5">
+                        {v.monthly_km != null ? (
+                          <span className="inline-flex items-center gap-1 text-zinc-700 dark:text-zinc-300 font-medium">
+                            {v.monthly_km.toLocaleString()}
+                            <span className="text-xs text-zinc-400">km</span>
+                          </span>
+                        ) : (
+                          <span className="text-zinc-400">—</span>
+                        )}
                       </td>
                       {/* Status badge */}
                       <td className="py-3.5 px-5">
@@ -270,6 +290,22 @@ export default function VehiclesPage() {
                       {/* Actions */}
                       <td className="py-3.5 px-5">
                         <div className="flex items-center justify-end gap-1.5">
+                          {v.status !== "AVAILABLE" ? (
+                            <Link
+                              href={`/admin/vehicles/${v.id}/report`}
+                              title="KM Report"
+                              className="p-1.5 rounded-lg text-zinc-400 hover:text-purple-500 hover:bg-purple-50 dark:hover:bg-purple-500/10 transition-colors"
+                            >
+                              <BarChart2 className="w-4 h-4" />
+                            </Link>
+                          ) : (
+                            <span
+                              title="Assign a driver first to view report"
+                              className="p-1.5 rounded-lg text-zinc-200 dark:text-zinc-700 cursor-not-allowed"
+                            >
+                              <BarChart2 className="w-4 h-4" />
+                            </span>
+                          )}
                           <button
                             onClick={() => openEditModal(v)}
                             className="p-1.5 rounded-lg text-zinc-400 hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-500/10 transition-colors"
@@ -291,7 +327,7 @@ export default function VehiclesPage() {
                 })}
                 {vehicles.length === 0 && (
                   <tr>
-                    <td colSpan={7} className="py-16 text-center text-zinc-400 dark:text-zinc-500">
+                    <td colSpan={9} className="py-16 text-center text-zinc-400 dark:text-zinc-500">
                       <Car className="w-10 h-10 mx-auto mb-3 opacity-30" />
                       <p className="font-medium">No vehicles found</p>
                       <p className="text-xs mt-1">Click &quot;Add Vehicle&quot; to get started</p>
@@ -343,10 +379,10 @@ export default function VehiclesPage() {
                 )}
 
                 <div className="grid grid-cols-2 gap-3">
-                  <Field label="Make">
+                  <Field label="Model Year">
                     <input required value={formData.make} onChange={e => setFormData({ ...formData, make: e.target.value })} className={inputCls} placeholder="e.g. Toyota" />
                   </Field>
-                  <Field label="Model">
+                  <Field label="Name">
                     <input required value={formData.model} onChange={e => setFormData({ ...formData, model: e.target.value })} className={inputCls} placeholder="e.g. Camry" />
                   </Field>
                 </div>
@@ -363,6 +399,17 @@ export default function VehiclesPage() {
                     <input value={formData.category} onChange={e => setFormData({ ...formData, category: e.target.value })} className={inputCls} placeholder="e.g. Economy" />
                   </Field>
                 </div>
+
+                <Field label="Monthly KM Limit">
+                  <input
+                    type="number"
+                    min="0"
+                    value={formData.monthly_km ?? ""}
+                    onChange={e => setFormData({ ...formData, monthly_km: e.target.value === "" ? null : Number(e.target.value) })}
+                    className={inputCls}
+                    placeholder="e.g. 3000"
+                  />
+                </Field>
 
                 <Field label="Status">
                   <select value={formData.status} onChange={e => setFormData({ ...formData, status: e.target.value })} className={inputCls}>

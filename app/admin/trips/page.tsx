@@ -238,7 +238,6 @@ export default function TripsPage() {
                 >
                   <option value="">All Statuses</option>
                   <option value="OPEN">Open</option>
-                  <option value="IN_PROGRESS">In Progress</option>
                   <option value="COMPLETED">Completed</option>
                 </select>
               </div>

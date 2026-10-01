@@ -88,8 +88,36 @@ export default function TripDetailsPage() {
               <p className="text-zinc-900 dark:text-white font-medium">{trip.km_used} km</p>
             </div>
             <div>
+              <p className="text-xs text-zinc-500 uppercase">Start Time</p>
+              <p className="text-zinc-900 dark:text-white font-medium">
+                {trip.start_server_time ? new Date(trip.start_server_time).toLocaleTimeString() : '-'}
+              </p>
+            </div>
+            <div>
+              <p className="text-xs text-zinc-500 uppercase">End Time</p>
+              <p className="text-zinc-900 dark:text-white font-medium">
+                {trip.end_server_time ? new Date(trip.end_server_time).toLocaleTimeString() : '-'}
+              </p>
+            </div>
+            <div>
+              <p className="text-xs text-zinc-500 uppercase">Start Odometer</p>
+              <p className="text-zinc-900 dark:text-white font-medium">{trip.start_odometer}</p>
+            </div>
+            <div>
+              <p className="text-xs text-zinc-500 uppercase">End Odometer</p>
+              <p className="text-zinc-900 dark:text-white font-medium">{trip.end_odometer}</p>
+            </div>
+            <div className="col-span-2">
               <p className="text-xs text-zinc-500 uppercase">Path</p>
               <p className="text-zinc-900 dark:text-white font-medium">{trip.route_notes}</p>
+            </div>
+            <div className="col-span-1">
+              <p className="text-xs text-zinc-500 uppercase">Start Location</p>
+              <p className="text-zinc-900 dark:text-white font-medium">{trip.start_location}</p>
+            </div>
+            <div className="col-span-1">
+              <p className="text-xs text-zinc-500 uppercase">End Location</p>
+              <p className="text-zinc-900 dark:text-white font-medium">{trip.end_location || '-'}</p>
             </div>
           </div>
         </div>
@@ -127,6 +155,11 @@ export default function TripDetailsPage() {
               {trip.start_odometer_image ? (
                 <div className="rounded-xl overflow-hidden border border-zinc-200 dark:border-white/10 bg-zinc-50 dark:bg-black/40 aspect-video relative flex items-center justify-center p-2">
                   <img src={trip.start_odometer_image} alt="Start Odometer" className="max-w-full max-h-full object-contain" />
+                  {trip.start_odometer !== null && trip.start_odometer !== undefined && (
+                    <div className="absolute bottom-3 right-3 bg-black/70 backdrop-blur-md text-white px-3 py-1.5 rounded-lg text-sm font-semibold border border-white/20 shadow-lg">
+                      {trip.start_odometer} km
+                    </div>
+                  )}
                 </div>
               ) : (
                 <div className="rounded-xl border border-zinc-200 dark:border-white/10 border-dashed bg-zinc-50 dark:bg-black/20 aspect-video flex items-center justify-center text-zinc-500">
@@ -140,6 +173,11 @@ export default function TripDetailsPage() {
               {trip.end_odometer_image ? (
                 <div className="rounded-xl overflow-hidden border border-zinc-200 dark:border-white/10 bg-zinc-50 dark:bg-black/40 aspect-video relative flex items-center justify-center p-2">
                   <img src={trip.end_odometer_image} alt="End Odometer" className="max-w-full max-h-full object-contain" />
+                  {trip.end_odometer !== null && trip.end_odometer !== undefined && (
+                    <div className="absolute bottom-3 right-3 bg-black/70 backdrop-blur-md text-white px-3 py-1.5 rounded-lg text-sm font-semibold border border-white/20 shadow-lg">
+                      {trip.end_odometer} km
+                    </div>
+                  )}
                 </div>
               ) : (
                 <div className="rounded-xl border border-zinc-200 dark:border-white/10 border-dashed bg-zinc-50 dark:bg-black/20 aspect-video flex items-center justify-center text-zinc-500">

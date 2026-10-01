@@ -135,33 +135,42 @@ export default function UsersPage() {
 
   // ── Modal helpers ──────────────────────────────────────────────────────────
 
-  const openCreateModal = () => {
+  const openCreateModal = async () => {
     setEditingUserId(null);
     setFormError(null);
     setFormData({ full_name: "", mobile_number: "", email: "", role: "DRIVER", status: "ACTIVE", notes: "", password: "", vehicle_id: "" });
-    fetchVehicles(); // refresh available vehicles list
+    // Load vehicles BEFORE opening so the dropdown is populated immediately
+    try {
+      const res = await api.get("/admin/vehicles");
+      setVehicles((res.data as VehicleBasic[]).filter((v) => v.status === "AVAILABLE"));
+    } catch (err) {
+      console.error("Failed to fetch vehicles", err);
+    }
     setIsModalOpen(true);
   };
 
   const openEditModal = async (e: React.MouseEvent, user: User | UserDetail) => {
     e.stopPropagation();
-    setEditingUserId(user.id!);
     setFormError(null);
-    setIsModalOpen(true);
 
-    // Always fetch the full user detail to get assigned_vehicle before showing the modal
+    // Fetch full user detail AND available vehicles BEFORE opening the modal
+    // This prevents a race condition where setFormData (from async fetch) would
+    // overwrite the user's vehicle selection if they interacted with the form quickly.
     let fullUser: UserDetail = user as UserDetail;
-    if (!('assigned_vehicle' in user) || user.assigned_vehicle === undefined) {
-      try {
-        const res = await api.get(`/admin/users/${user.id}`);
-        fullUser = res.data;
-        // Update the detail panel too if it's showing the same user
-        if (selectedUser?.id === user.id) setSelectedUser(fullUser);
-      } catch (err) {
-        console.error("Failed to fetch user detail for edit", err);
-      }
+    try {
+      const [userRes, vehicleRes] = await Promise.all([
+        api.get(`/admin/users/${user.id}`),
+        api.get("/admin/vehicles"),
+      ]);
+      fullUser = userRes.data;
+      setVehicles((vehicleRes.data as VehicleBasic[]).filter((v) => v.status === "AVAILABLE"));
+      // Update the detail panel too if it's showing the same user
+      if (selectedUser?.id === user.id) setSelectedUser(fullUser);
+    } catch (err) {
+      console.error("Failed to fetch user detail for edit", err);
     }
 
+    setEditingUserId(user.id!);
     setFormData({
       full_name: fullUser.full_name,
       mobile_number: fullUser.mobile_number,
@@ -173,7 +182,7 @@ export default function UsersPage() {
       vehicle_id: fullUser.assigned_vehicle?.id || "",
       _assignedVehicle: fullUser.assigned_vehicle ?? undefined,
     });
-    fetchVehicles(); // refresh available vehicles list
+    setIsModalOpen(true); // open modal AFTER data is ready
   };
 
   const handleDelete = async (e: React.MouseEvent, id: string) => {
