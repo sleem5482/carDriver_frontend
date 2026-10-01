@@ -15,6 +15,7 @@ type Trip = {
   start_date: string;
   status: string;
   verification_status: string;
+  route_notes?: string;
   km_used: number;
   working_hours: number;
   created_at: string;
