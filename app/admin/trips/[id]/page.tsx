@@ -99,15 +99,15 @@ export default function TripDetailsPage() {
                 {trip.end_server_time ? new Date(trip.end_server_time).toLocaleTimeString() : '-'}
               </p>
             </div>
-            <div>
+            {/* <div>
               <p className="text-xs text-zinc-500 uppercase">Start Odometer</p>
               <p className="text-zinc-900 dark:text-white font-medium">{trip.start_odometer}</p>
             </div>
             <div>
               <p className="text-xs text-zinc-500 uppercase">End Odometer</p>
               <p className="text-zinc-900 dark:text-white font-medium">{trip.end_odometer}</p>
-            </div>
-            <div className="col-span-2">
+            </div> */}
+            <div className="col-span-1">
               <p className="text-xs text-zinc-500 uppercase">Path</p>
               <p className="text-zinc-900 dark:text-white font-medium">{trip.route_notes}</p>
             </div>
