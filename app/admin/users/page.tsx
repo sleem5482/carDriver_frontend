@@ -77,7 +77,7 @@ export default function UsersPage() {
   const [editingUserId, setEditingUserId] = useState<string | null>(null);
   const [createdUserCode, setCreatedUserCode] = useState<string | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
-  const [formData, setFormData] = useState<Partial<User> & { password?: string; vehicle_id?: string }>({
+  const [formData, setFormData] = useState<Partial<User> & { password?: string; vehicle_id?: string; _assignedVehicle?: VehicleBasic }>({
     full_name: "",
     mobile_number: "",
     email: "",
@@ -109,8 +109,9 @@ export default function UsersPage() {
 
   const fetchVehicles = async () => {
     try {
-      const res = await api.get("/admin/vehicles/");
-      setVehicles(res.data);
+      const res = await api.get("/admin/vehicles");
+      // Keep AVAILABLE vehicles for the dropdown; assigned vehicle is added separately
+      setVehicles((res.data as VehicleBasic[]).filter((v) => v.status === "AVAILABLE"));
     } catch (err) {
       console.error("Failed to fetch vehicles", err);
     }
@@ -138,24 +139,41 @@ export default function UsersPage() {
     setEditingUserId(null);
     setFormError(null);
     setFormData({ full_name: "", mobile_number: "", email: "", role: "DRIVER", status: "ACTIVE", notes: "", password: "", vehicle_id: "" });
+    fetchVehicles(); // refresh available vehicles list
     setIsModalOpen(true);
   };
 
-  const openEditModal = (e: React.MouseEvent, user: User) => {
+  const openEditModal = async (e: React.MouseEvent, user: User | UserDetail) => {
     e.stopPropagation();
     setEditingUserId(user.id!);
     setFormError(null);
-    setFormData({
-      full_name: user.full_name,
-      mobile_number: user.mobile_number,
-      email: user.email,
-      role: user.role,
-      status: user.status,
-      notes: user.notes,
-      password: "",
-      vehicle_id: user.assigned_vehicle?.id || "",
-    });
     setIsModalOpen(true);
+
+    // Always fetch the full user detail to get assigned_vehicle before showing the modal
+    let fullUser: UserDetail = user as UserDetail;
+    if (!('assigned_vehicle' in user) || user.assigned_vehicle === undefined) {
+      try {
+        const res = await api.get(`/admin/users/${user.id}`);
+        fullUser = res.data;
+        // Update the detail panel too if it's showing the same user
+        if (selectedUser?.id === user.id) setSelectedUser(fullUser);
+      } catch (err) {
+        console.error("Failed to fetch user detail for edit", err);
+      }
+    }
+
+    setFormData({
+      full_name: fullUser.full_name,
+      mobile_number: fullUser.mobile_number,
+      email: fullUser.email,
+      role: fullUser.role,
+      status: fullUser.status,
+      notes: fullUser.notes,
+      password: "",
+      vehicle_id: fullUser.assigned_vehicle?.id || "",
+      _assignedVehicle: fullUser.assigned_vehicle ?? undefined,
+    });
+    fetchVehicles(); // refresh available vehicles list
   };
 
   const handleDelete = async (e: React.MouseEvent, id: string) => {
@@ -190,7 +208,15 @@ export default function UsersPage() {
       status: formData.status,
       notes: formData.notes || "",
     };
-    if (formData.vehicle_id) payload.vehicle_id = formData.vehicle_id;
+
+    // Send vehicle_id if a vehicle is selected; send null explicitly to unassign
+    if (formData.vehicle_id) {
+      payload.vehicle_id = formData.vehicle_id;
+    } else {
+      // Only send null on update (to unassign); don't send on create if blank
+      if (editingUserId) payload.vehicle_id = null;
+    }
+
     if (editingUserId && formData.password) payload.password = formData.password;
 
     try {
@@ -540,6 +566,17 @@ export default function UsersPage() {
                 <div className="space-y-1.5 pt-2 border-t border-zinc-200 dark:border-white/10">
                   <label className="text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase">Assign Vehicle</label>
                   <select value={formData.vehicle_id || ""} onChange={(e) => setFormData({ ...formData, vehicle_id: e.target.value })} className="w-full bg-zinc-50 dark:bg-black/40 border border-zinc-200 dark:border-white/10 rounded-xl px-4 py-2 text-zinc-900 dark:text-white focus:outline-none focus:border-blue-500/50">
+                    {/* No vehicle option */}
+                    <option value="">— No vehicle assigned —</option>
+                    {/* Currently assigned vehicle (shown even though it's not AVAILABLE status) */}
+                    {editingUserId && formData.vehicle_id && !vehicles.find((v) => v.id === formData.vehicle_id) && (
+                      <option value={formData.vehicle_id}>
+                        {formData._assignedVehicle
+                          ? `${formData._assignedVehicle.plate_number} (${formData._assignedVehicle.make} ${formData._assignedVehicle.model}) — currently assigned`
+                          : `Currently assigned vehicle`}
+                      </option>
+                    )}
+                    {/* AVAILABLE vehicles */}
                     {vehicles.map((v) => (
                       <option key={v.id} value={v.id}>{v.plate_number} ({v.make} {v.model})</option>
                     ))}
