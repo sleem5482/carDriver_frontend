@@ -540,12 +540,6 @@ export default function UsersPage() {
                 <div className="space-y-1.5 pt-2 border-t border-zinc-200 dark:border-white/10">
                   <label className="text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase">Assign Vehicle</label>
                   <select value={formData.vehicle_id || ""} onChange={(e) => setFormData({ ...formData, vehicle_id: e.target.value })} className="w-full bg-zinc-50 dark:bg-black/40 border border-zinc-200 dark:border-white/10 rounded-xl px-4 py-2 text-zinc-900 dark:text-white focus:outline-none focus:border-blue-500/50">
-                    {/* <option value="">-- No Vehicle Assigned --</option> */}
-                    {editingUserId && formData.vehicle_id && !vehicles.find((v) => v.id === formData.vehicle_id) && (
-                      <option value={formData.vehicle_id}>
-                        {users.find((u) => u.id === editingUserId)?.assigned_vehicle?.plate_number ?? "Current Vehicle"}{" (currently assigned)"}
-                      </option>
-                    )}
                     {vehicles.map((v) => (
                       <option key={v.id} value={v.id}>{v.plate_number} ({v.make} {v.model})</option>
                     ))}
