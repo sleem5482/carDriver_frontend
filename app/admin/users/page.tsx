@@ -522,12 +522,12 @@ export default function UsersPage() {
                   </div>
                 </div>
 
-                {editingUserId && (
+                {/* {editingUserId && (
                   <div className="space-y-1.5">
                     <label className="text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase">Update Password (leave blank to keep)</label>
                     <input type="password" value={formData.password} onChange={(e) => setFormData({ ...formData, password: e.target.value })} className="w-full bg-zinc-50 dark:bg-black/40 border border-zinc-200 dark:border-white/10 rounded-xl px-4 py-2 text-zinc-900 dark:text-white focus:outline-none focus:border-blue-500/50" placeholder="••••••••" />
                   </div>
-                )}
+                )} */}
 
                 <div className="space-y-1.5">
                   <label className="text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase">Status</label>
