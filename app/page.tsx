@@ -62,7 +62,7 @@ export default function AdminEntryPoint() {
           >
             <div className="relative w-full h-full flex items-center justify-center">
               <Image
-                src="/photo1.jpg"
+                src="/admin-icon.jpg"
                 alt="Car Driver Front Splash"
                 fill
                 className="object-contain opacity-60 scale-95"

@@ -89,7 +89,7 @@ export default function AdminDashboard() {
       {/* Hero Banner */}
       <div className="relative w-full h-64 rounded-3xl overflow-hidden shadow-2xl group">
         <Image
-          src="/photo2.jpg"
+          src="/admin-icon.jpg"
           alt="Admin Dashboard Cover"
           fill
           className="object-cover group-hover:scale-105 transition-transform duration-700 ease-in-out"

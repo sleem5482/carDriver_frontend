@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Plus, Loader2, Edit2, Trash2, X, Car, BarChart2 } from "lucide-react";
 import Link from "next/link";
+import Image from "next/image";
 import api from "../../../lib/api";
 
 type Vehicle = {
@@ -168,9 +169,22 @@ export default function VehiclesPage() {
 
       {/* ── Header ───────────────────────────────────────────── */}
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-zinc-900 dark:text-white">Vehicles</h1>
-          <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-0.5">Manage all registered vehicles</p>
+        <div className="flex items-center gap-4">
+          {/* App icon */}
+          <div className="w-14 h-14 rounded-2xl overflow-hidden shadow-lg ring-2 ring-blue-500/20 flex-shrink-0">
+            <Image
+              src="/admin-icon.jpg"
+              alt="Vehicle Fleet Admin"
+              width={56}
+              height={56}
+              className="w-full h-full object-cover"
+              priority
+            />
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold text-zinc-900 dark:text-white">Vehicles</h1>
+            <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-0.5">Manage all registered vehicles</p>
+          </div>
         </div>
         <button
           onClick={openCreateModal}
@@ -290,22 +304,13 @@ export default function VehiclesPage() {
                       {/* Actions */}
                       <td className="py-3.5 px-5">
                         <div className="flex items-center justify-end gap-1.5">
-                          {v.status !== "AVAILABLE" ? (
-                            <Link
-                              href={`/admin/vehicles/${v.id}/report`}
-                              title="KM Report"
-                              className="p-1.5 rounded-lg text-zinc-400 hover:text-purple-500 hover:bg-purple-50 dark:hover:bg-purple-500/10 transition-colors"
-                            >
-                              <BarChart2 className="w-4 h-4" />
-                            </Link>
-                          ) : (
-                            <span
-                              title="Assign a driver first to view report"
-                              className="p-1.5 rounded-lg text-zinc-200 dark:text-zinc-700 cursor-not-allowed"
-                            >
-                              <BarChart2 className="w-4 h-4" />
-                            </span>
-                          )}
+                          <Link
+                            href={`/admin/vehicles/${v.id}/report`}
+                            title="View Report"
+                            className="p-1.5 rounded-lg text-zinc-400 hover:text-purple-500 hover:bg-purple-50 dark:hover:bg-purple-500/10 transition-colors"
+                          >
+                            <BarChart2 className="w-4 h-4" />
+                          </Link>
                           <button
                             onClick={() => openEditModal(v)}
                             className="p-1.5 rounded-lg text-zinc-400 hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-500/10 transition-colors"

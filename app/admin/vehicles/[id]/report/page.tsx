@@ -108,8 +108,19 @@ export default function VehicleReportPage() {
   const [error, setError] = useState<string | null>(null);
 
   const fetchReport = useCallback(async () => {
+    // Client-side date validation — prevents crash when same or invalid range
+    if (!dateFrom || !dateTo) {
+      setError("Please select both a From and To date.");
+      return;
+    }
+    if (dateFrom > dateTo) {
+      setError("\"From\" date cannot be after \"To\" date. Please adjust the range.");
+      return;
+    }
+
     setIsLoading(true);
     setError(null);
+    setReport(null);
     try {
       const res = await api.get(
         `/admin/vehicles/${vehicleId}/report?date_from=${dateFrom}&date_to=${dateTo}`
@@ -117,7 +128,11 @@ export default function VehicleReportPage() {
       setReport(res.data);
     } catch (err: unknown) {
       const e = err as { response?: { data?: { detail?: string } } };
-      setError(e?.response?.data?.detail ?? "Failed to load report.");
+      setError(
+        e?.response?.data?.detail ??
+        (e as { message?: string })?.message ??
+        "Failed to load report. Please try a different date range."
+      );
     } finally {
       setIsLoading(false);
     }
@@ -192,8 +207,9 @@ export default function VehicleReportPage() {
             <div className="flex items-end">
               <button
                 onClick={fetchReport}
-                disabled={isLoading}
-                className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white px-4 py-2 rounded-xl text-sm font-semibold transition-all shadow-[0_0_20px_rgba(59,130,246,0.2)]"
+                disabled={isLoading || !dateFrom || !dateTo || dateFrom > dateTo}
+                title={dateFrom > dateTo ? '"From" date cannot be after "To" date' : undefined}
+                className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 disabled:cursor-not-allowed text-white px-4 py-2 rounded-xl text-sm font-semibold transition-all shadow-[0_0_20px_rgba(59,130,246,0.2)]"
               >
                 {isLoading ? (
                   <Loader2 className="w-4 h-4 animate-spin" />
@@ -203,6 +219,13 @@ export default function VehicleReportPage() {
                 Apply
               </button>
             </div>
+            {/* Inline date validation warning */}
+            {dateFrom && dateTo && dateFrom > dateTo && (
+              <div className="flex items-center gap-1.5 text-amber-600 dark:text-amber-400 text-xs font-medium">
+                <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
+                &ldquo;From&rdquo; date is after &ldquo;To&rdquo; date
+              </div>
+            )}
           </div>
         </div>
       </div>
