@@ -117,6 +117,7 @@ function exportTripsToExcel(trips: Trip[], applied: Filters, drivers: { id: stri
   const totStyle = `background-color:#e8f0fe;font-weight:bold;border:1px solid #aaa;padding:5px 10px;text-align:center;font-size:12px;`;
 
   const buildRow = (t: Trip) => {
+    // console.log(t)
     const d = new Date(t.start_date);
     const dayName = DAY_NAMES[d.getDay()];
     return `<tr>
