@@ -52,6 +52,7 @@ type TripEntry = {
   end_odometer?: number;
   km_used: number;
   working_hours_formatted?: string;
+  overtime_hours?: number;
   route_notes?: string;
   status: string;
   verification_status?: string;
@@ -97,6 +98,14 @@ function firstOfMonth() {
   const d = new Date();
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-01`;
 }
+
+const fmtOvertime = (hours: number) => {
+  const totalMinutes = Math.round(hours * 60);
+  if (totalMinutes < 60) return `${totalMinutes}m`;
+  const h = Math.floor(totalMinutes / 60);
+  const m = totalMinutes % 60;
+  return m > 0 ? `${h}h ${m}m` : `${h}h`;
+};
 
 export default function VehicleReportPage() {
   const params = useParams();
@@ -532,6 +541,14 @@ export default function VehicleReportPage() {
                                 </span>
                                 <span className="text-xs text-zinc-400 ml-1">km</span>
                               </div>
+                              {t.overtime_hours ? (
+                                <div>
+                                  <span className="text-xs text-zinc-400 block mb-0.5 text-right">Overtime</span>
+                                  <span className="inline-flex px-2 py-0.5 rounded-md text-xs font-semibold bg-red-500/15 text-red-400 border border-red-500/30">
+                                    +{fmtOvertime(t.overtime_hours)}
+                                  </span>
+                                </div>
+                              ) : null}
                               <div className="flex flex-col gap-1 items-end">
                                 <span
                                   className={`inline-flex px-2 py-0.5 rounded-md text-xs font-semibold border ${
@@ -646,6 +663,9 @@ export default function VehicleReportPage() {
                               KM
                             </th>
                             <th className="py-2.5 px-4 text-left text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
+                              Overtime
+                            </th>
+                            <th className="py-2.5 px-4 text-left text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
                               Status
                             </th>
                           </tr>
@@ -670,6 +690,15 @@ export default function VehicleReportPage() {
                                   {(t.km_used ?? 0).toLocaleString()}
                                 </span>
                                 <span className="text-xs text-zinc-400 ml-1">km</span>
+                              </td>
+                              <td className="py-3 px-4">
+                                {t.overtime_hours ? (
+                                  <span className="inline-flex px-2 py-0.5 rounded-md text-xs font-semibold bg-red-500/15 text-red-400 border border-red-500/30">
+                                    +{fmtOvertime(t.overtime_hours)}
+                                  </span>
+                                ) : (
+                                  <span className="text-zinc-400">—</span>
+                                )}
                               </td>
                               <td className="py-3 px-4">
                                 <span

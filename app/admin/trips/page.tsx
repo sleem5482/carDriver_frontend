@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Loader2, Eye, SlidersHorizontal, X, Search, Map, ChevronDown } from "lucide-react";
+import { Loader2, Eye, SlidersHorizontal, X, Search, Map, ChevronDown, FileDown } from "lucide-react";
 import Link from "next/link";
 import api from "../../../lib/api";
 
@@ -20,6 +20,10 @@ type Trip = {
   working_hours: number;
   working_hours_formatted?: string;
   overtime_hours?: number;
+  start_odometer?: number;
+  end_odometer?: number;
+  start_server_time?: string;
+  end_server_time?: string;
   created_at: string;
 };
 
@@ -71,6 +75,103 @@ const fmtOvertime = (hours: number) => {
   const m = totalMinutes % 60;
   return m > 0 ? `${h}h ${m}m` : `${h}h`;
 };
+
+const DAY_NAMES = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+
+function getWeekNumber(dateStr: string): number {
+  const d = new Date(dateStr);
+  const startOfYear = new Date(d.getFullYear(), 0, 1);
+  return Math.ceil(((d.getTime() - startOfYear.getTime()) / 86400000 + startOfYear.getDay() + 1) / 7);
+}
+
+function fmtTime(isoStr?: string): string {
+  if (!isoStr) return "—";
+  const d = new Date(isoStr);
+  return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", hour12: false });
+}
+
+function exportTripsToExcel(trips: Trip[], applied: Filters, drivers: { id: string; full_name: string }[], vehicles: { id: string; plate_number: string; make: string; model: string }[]) {
+  const driverName = applied.driver_id ? drivers.find(d => d.id === applied.driver_id)?.full_name ?? "" : "";
+  const vehicleName = applied.vehicle_id ? (() => { const v = vehicles.find(v => v.id === applied.vehicle_id); return v ? `${v.plate_number} (${v.make} ${v.model})` : ""; })() : "";
+  const periodFrom = applied.date_from || "—";
+  const periodTo = applied.date_to || "—";
+  const subtitle = driverName ? `Driver: ${driverName}` : vehicleName ? `Vehicle: ${vehicleName}` : "All Trips";
+
+  // Group trips by ISO week
+  const weeks: { weekKey: number; trips: Trip[] }[] = [];
+  trips.forEach(t => {
+    const wk = getWeekNumber(t.start_date);
+    let group = weeks.find(w => w.weekKey === wk);
+    if (!group) { group = { weekKey: wk, trips: [] }; weeks.push(group); }
+    group.trips.push(t);
+  });
+
+  const totalKm = trips.reduce((s, t) => s + (t.km_used ?? 0), 0);
+  const totalOt = trips.reduce((s, t) => s + (t.overtime_hours ?? 0), 0);
+
+  const thStyle = `background-color:#1e3a5f;color:#ffffff;font-weight:bold;border:1px solid #ccc;padding:6px 10px;text-align:center;white-space:nowrap;`;
+  const tdStyle = `border:1px solid #d0d0d0;padding:5px 10px;text-align:center;font-size:12px;`;
+  const totStyle = `background-color:#e8f0fe;font-weight:bold;border:1px solid #aaa;padding:5px 10px;text-align:center;font-size:12px;`;
+
+  const buildRow = (t: Trip) => {
+    const d = new Date(t.start_date);
+    const dayName = DAY_NAMES[d.getDay()];
+    return `<tr>
+      <td style="${tdStyle}">${t.start_date}</td>
+      <td style="${tdStyle}">${dayName}</td>
+      <td style="${tdStyle}">${t.driver?.full_name ?? "—"}</td>
+      <td style="${tdStyle}">${fmtTime(t.start_server_time)}</td>
+      <td style="${tdStyle}">${fmtTime(t.end_server_time)}</td>
+      <td style="${tdStyle}">${t.start_odometer != null ? Math.round(t.start_odometer).toLocaleString() : "—"}</td>
+      <td style="${tdStyle}">${t.end_odometer != null ? Math.round(t.end_odometer).toLocaleString() : "—"}</td>
+      <td style="${tdStyle}">${(t.km_used ?? 0).toLocaleString()}</td>
+      <td style="${tdStyle}">${t.overtime_hours ? fmtOvertime(t.overtime_hours) : "—"}</td>
+    </tr>`;
+  };
+
+  const rows = weeks.map((wk, i) => [
+    ...wk.trips.map(t => buildRow(t)),
+    i < weeks.length - 1 ? `<tr><td colspan="9" style="height:10px;border:none;"></td></tr>` : ""
+  ].join("")).join("");
+
+  const html = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
+<head><meta charset="utf-8"><style>table{border-collapse:collapse;font-family:Calibri,Arial,sans-serif;font-size:12px;min-width:700px;}</style></head>
+<body>
+<p style="text-align:center;font-size:16px;font-weight:bold;color:#1e3a5f;margin-bottom:2px;">VEHICLE ACCOUNT STATEMENT</p>
+<p style="text-align:center;font-size:12px;color:#555;margin-bottom:2px;">${subtitle}</p>
+<p style="text-align:center;font-size:11px;color:#888;margin-bottom:12px;">Period: ${periodFrom} &nbsp;to&nbsp; ${periodTo}</p>
+<table>
+  <thead><tr>
+    <th style="${thStyle}">Date</th>
+    <th style="${thStyle}">Day</th>
+    <th style="${thStyle}">Driver</th>
+    <th style="${thStyle}">Start Time</th>
+    <th style="${thStyle}">End Time</th>
+    <th style="${thStyle}">Start KM</th>
+    <th style="${thStyle}">End KM</th>
+    <th style="${thStyle}">Total KM</th>
+    <th style="${thStyle}">OT Hours</th>
+  </tr></thead>
+  <tbody>
+    ${rows}
+    <tr>
+      <td colspan="7" style="${totStyle}">TOTAL</td>
+      <td style="${totStyle}">${totalKm.toLocaleString()}</td>
+      <td style="${totStyle}">${totalOt > 0 ? fmtOvertime(totalOt) : "—"}</td>
+    </tr>
+  </tbody>
+</table>
+<p style="text-align:center;font-size:10px;color:#999;margin-top:14px;">Generated: ${new Date().toLocaleDateString()} &bull; Prepared by: Administration</p>
+</body></html>`;
+
+  const blob = new Blob([html], { type: "application/vnd.ms-excel;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `trips-report-${periodFrom}-${periodTo}.xls`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
 
 // ─── Component ───────────────────────────────────────────────────────────────
 
@@ -164,6 +265,15 @@ export default function TripsPage() {
             >
               <X className="w-3.5 h-3.5" />
               Clear filters
+            </button>
+          )}
+          {trips.length > 0 && (
+            <button
+              onClick={() => exportTripsToExcel(trips, applied, drivers, vehicles)}
+              className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold border transition-all bg-emerald-600 hover:bg-emerald-500 text-white border-emerald-600 shadow-[0_0_15px_rgba(16,185,129,0.25)]"
+            >
+              <FileDown className="w-4 h-4" />
+              Export Excel
             </button>
           )}
           <button
