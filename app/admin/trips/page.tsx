@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Loader2, Eye, SlidersHorizontal, X, Search, Map } from "lucide-react";
+import { Loader2, Eye, SlidersHorizontal, X, Search, Map, ChevronDown } from "lucide-react";
 import Link from "next/link";
 import api from "../../../lib/api";
 
@@ -228,31 +228,25 @@ export default function TripsPage() {
               {/* Driver Dropdown */}
               <div className="space-y-1.5">
                 <label className={labelCls}>Driver</label>
-                <select
+                <SearchableSelect
+                  options={drivers.map(d => ({ label: d.full_name, value: d.id }))}
                   value={filters.driver_id}
-                  onChange={e => setFilters(f => ({ ...f, driver_id: e.target.value }))}
+                  onChange={val => setFilters(f => ({ ...f, driver_id: val }))}
+                  placeholder="All Drivers"
                   className={inputCls}
-                >
-                  <option value="">All Drivers</option>
-                  {drivers.map(d => (
-                    <option key={d.id} value={d.id}>{d.full_name}</option>
-                  ))}
-                </select>
+                />
               </div>
 
               {/* Vehicle Dropdown */}
               <div className="space-y-1.5">
                 <label className={labelCls}>Vehicle</label>
-                <select
+                <SearchableSelect
+                  options={vehicles.map(v => ({ label: `${v.plate_number} (${v.make} ${v.model})`, value: v.id }))}
                   value={filters.vehicle_id}
-                  onChange={e => setFilters(f => ({ ...f, vehicle_id: e.target.value }))}
+                  onChange={val => setFilters(f => ({ ...f, vehicle_id: val }))}
+                  placeholder="All Vehicles"
                   className={inputCls}
-                >
-                  <option value="">All Vehicles</option>
-                  {vehicles.map(v => (
-                    <option key={v.id} value={v.id}>{v.plate_number} ({v.make} {v.model})</option>
-                  ))}
-                </select>
+                />
               </div>
 
               {/* Trip Status */}
@@ -423,3 +417,102 @@ function Pill({ label, onRemove }: { label: string; onRemove: () => void }) {
     </span>
   );
 }
+
+// ─── Searchable Select Component ──────────────────────────────────────────────
+function SearchableSelect({
+  options,
+  value,
+  onChange,
+  placeholder,
+  className
+}: {
+  options: { label: string; value: string }[];
+  value: string;
+  onChange: (val: string) => void;
+  placeholder: string;
+  className?: string;
+}) {
+  const [isOpen, setIsOpen] = useState(false);
+  const [search, setSearch] = useState("");
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setIsOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const filteredOptions = options.filter(o => 
+    o.label.toLowerCase().includes(search.toLowerCase())
+  );
+
+  const selectedOption = options.find(o => o.value === value);
+
+  return (
+    <div className="relative" ref={dropdownRef}>
+      <div
+        className={`${className} cursor-pointer flex items-center justify-between`}
+        onClick={() => setIsOpen(!isOpen)}
+      >
+        <span className={selectedOption ? "truncate" : "text-zinc-500 truncate"}>
+          {selectedOption ? selectedOption.label : placeholder}
+        </span>
+        <ChevronDown className="w-4 h-4 text-zinc-400 shrink-0 ml-2" />
+      </div>
+      
+      {isOpen && (
+        <div className="absolute z-50 w-full mt-1 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-white/10 rounded-xl shadow-lg max-h-60 flex flex-col">
+          <div className="p-2 border-b border-zinc-100 dark:border-white/10 shrink-0">
+            <div className="relative">
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-zinc-400 pointer-events-none" />
+              <input
+                type="text"
+                placeholder="Search..."
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+                onClick={e => e.stopPropagation()}
+                className="w-full bg-zinc-50 dark:bg-white/5 border border-zinc-200 dark:border-white/10 rounded-lg pl-8 pr-3 py-1.5 text-sm text-zinc-900 dark:text-white placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-blue-500/40 transition"
+              />
+            </div>
+          </div>
+          <div className="overflow-y-auto p-1 overflow-x-hidden">
+            <div
+              className={`px-3 py-2 text-sm rounded-lg cursor-pointer truncate ${value === "" ? "bg-blue-50 text-blue-600 dark:bg-blue-500/10 dark:text-blue-400 font-medium" : "text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-white/5"}`}
+              onClick={() => {
+                onChange("");
+                setIsOpen(false);
+                setSearch("");
+              }}
+            >
+              {placeholder}
+            </div>
+            {filteredOptions.map(o => (
+              <div
+                key={o.value}
+                title={o.label}
+                className={`px-3 py-2 text-sm rounded-lg cursor-pointer truncate ${value === o.value ? "bg-blue-50 text-blue-600 dark:bg-blue-500/10 dark:text-blue-400 font-medium" : "text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-white/5"}`}
+                onClick={() => {
+                  onChange(o.value);
+                  setIsOpen(false);
+                  setSearch("");
+                }}
+              >
+                {o.label}
+              </div>
+            ))}
+            {filteredOptions.length === 0 && (
+              <div className="px-3 py-3 text-sm text-zinc-500 text-center">
+                No results found
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
