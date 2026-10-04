@@ -64,6 +64,14 @@ const fmtDate = (iso: string) => {
   return new Date(iso).toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" });
 };
 
+const fmtOvertime = (hours: number) => {
+  const totalMinutes = Math.round(hours * 60);
+  if (totalMinutes < 60) return `${totalMinutes}m`;
+  const h = Math.floor(totalMinutes / 60);
+  const m = totalMinutes % 60;
+  return m > 0 ? `${h}h ${m}m` : `${h}h`;
+};
+
 // ─── Component ───────────────────────────────────────────────────────────────
 
 export default function TripsPage() {
@@ -354,7 +362,7 @@ export default function TripsPage() {
                     <td className="py-3.5 px-5">
                       {t.overtime_hours ? (
                         <span className="text-red-600 dark:text-red-400 font-medium bg-red-50 dark:bg-red-500/10 px-2 py-1 rounded-md text-xs">
-                          {t.overtime_hours}h
+                          {fmtOvertime(t.overtime_hours)}
                         </span>
                       ) : (
                         <span className="text-zinc-400 text-sm">—</span>

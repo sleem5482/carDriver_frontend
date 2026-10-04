@@ -6,6 +6,16 @@ import { Loader2, ArrowLeft, Image as ImageIcon } from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import api from "../../../../lib/api";
+// ─── Helpers ─────────────────────────────────────────────────────────────────
+
+const fmtOvertime = (hours: number) => {
+  const totalMinutes = Math.round(hours * 60);
+  if (totalMinutes < 60) return `${totalMinutes}m`;
+  const h = Math.floor(totalMinutes / 60);
+  const m = totalMinutes % 60;
+  return m > 0 ? `${h}h ${m}m` : `${h}h`;
+};
+
 
 export default function TripDetailsPage() {
   const params = useParams();
@@ -87,7 +97,7 @@ export default function TripDetailsPage() {
               <p className="text-xs text-zinc-500 uppercase">Overtime</p>
               <p className="text-zinc-900 dark:text-white font-medium">
                 {trip.overtime_hours ? (
-                  <span className="text-red-500 bg-red-500/10 px-2 py-0.5 rounded text-sm">+{trip.overtime_hours}h</span>
+                  <span className="text-red-500 bg-red-500/10 px-2 py-0.5 rounded text-sm">+{fmtOvertime(trip.overtime_hours)}</span>
                 ) : "-"}
               </p>
             </div>
