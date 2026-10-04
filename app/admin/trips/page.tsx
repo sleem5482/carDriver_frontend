@@ -97,9 +97,12 @@ function exportTripsToExcel(trips: Trip[], applied: Filters, drivers: { id: stri
   const periodTo = applied.date_to || "—";
   const subtitle = driverName ? `Driver: ${driverName}` : vehicleName ? `Vehicle: ${vehicleName}` : "All Trips";
 
+  // Sort trips by date ascending
+  const sortedTrips = [...trips].sort((a, b) => new Date(a.start_date).getTime() - new Date(b.start_date).getTime());
+
   // Group trips by ISO week
   const weeks: { weekKey: number; trips: Trip[] }[] = [];
-  trips.forEach(t => {
+  sortedTrips.forEach(t => {
     const wk = getWeekNumber(t.start_date);
     let group = weeks.find(w => w.weekKey === wk);
     if (!group) { group = { weekKey: wk, trips: [] }; weeks.push(group); }
@@ -120,6 +123,7 @@ function exportTripsToExcel(trips: Trip[], applied: Filters, drivers: { id: stri
       <td style="${tdStyle}">${t.start_date}</td>
       <td style="${tdStyle}">${dayName}</td>
       <td style="${tdStyle}">${t.driver?.full_name ?? "—"}</td>
+      <td style="${tdStyle}">${t.vehicle ? `${t.vehicle.make} ${t.vehicle.model} - ${t.vehicle.plate_number}` : "—"}</td>
       <td style="${tdStyle}">${fmtTime(t.start_server_time)}</td>
       <td style="${tdStyle}">${fmtTime(t.end_server_time)}</td>
       <td style="${tdStyle}">${t.start_odometer != null ? Math.round(t.start_odometer).toLocaleString() : "—"}</td>
@@ -131,7 +135,7 @@ function exportTripsToExcel(trips: Trip[], applied: Filters, drivers: { id: stri
 
   const rows = weeks.map((wk, i) => [
     ...wk.trips.map(t => buildRow(t)),
-    i < weeks.length - 1 ? `<tr><td colspan="9" style="height:10px;border:none;"></td></tr>` : ""
+    i < weeks.length - 1 ? `<tr><td colspan="10" style="height:10px;border:none;"></td></tr>` : ""
   ].join("")).join("");
 
   const html = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
@@ -145,6 +149,7 @@ function exportTripsToExcel(trips: Trip[], applied: Filters, drivers: { id: stri
     <th style="${thStyle}">Date</th>
     <th style="${thStyle}">Day</th>
     <th style="${thStyle}">Driver</th>
+    <th style="${thStyle}">Vehicle</th>
     <th style="${thStyle}">Start Time</th>
     <th style="${thStyle}">End Time</th>
     <th style="${thStyle}">Start KM</th>
@@ -155,7 +160,7 @@ function exportTripsToExcel(trips: Trip[], applied: Filters, drivers: { id: stri
   <tbody>
     ${rows}
     <tr>
-      <td colspan="7" style="${totStyle}">TOTAL</td>
+      <td colspan="8" style="${totStyle}">TOTAL</td>
       <td style="${totStyle}">${totalKm.toLocaleString()}</td>
       <td style="${totStyle}">${totalOt > 0 ? fmtOvertime(totalOt) : "—"}</td>
     </tr>
