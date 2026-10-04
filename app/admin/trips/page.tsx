@@ -18,6 +18,8 @@ type Trip = {
   route_notes?: string;
   km_used: number;
   working_hours: number;
+  working_hours_formatted?: string;
+  overtime_hours?: number;
   created_at: string;
 };
 
