@@ -16,6 +16,7 @@ import {
   MapPin,
   Clock,
   FileText,
+  Timer,
 } from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
@@ -257,7 +258,7 @@ export default function VehicleReportPage() {
       {report && !isLoading && (
         <>
           {/* ── Stats Cards ── */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
             {/* Total KM */}
             <div className="bg-white dark:bg-white/5 border border-zinc-200 dark:border-white/10 rounded-2xl p-5 shadow-sm">
               <div className="flex items-center gap-2 mb-3">
@@ -332,6 +333,40 @@ export default function VehicleReportPage() {
                 {(report.overtime_km ?? 0).toLocaleString()}
               </p>
               <p className="text-xs text-zinc-400 mt-1">km over limit</p>
+            </div>
+
+            {/* Overtime Hours */}
+            <div
+              className={`border rounded-2xl p-5 shadow-sm ${
+                (report.trips?.reduce((s, t) => s + (t.overtime_hours || 0), 0) || 0) > 0
+                  ? "bg-red-50 dark:bg-red-500/10 border-red-200 dark:border-red-500/30"
+                  : "bg-white dark:bg-white/5 border-zinc-200 dark:border-white/10"
+              }`}
+            >
+              <div className="flex items-center gap-2 mb-3">
+                <Timer
+                  className={`w-4 h-4 ${
+                    (report.trips?.reduce((s, t) => s + (t.overtime_hours || 0), 0) || 0) > 0
+                      ? "text-red-500"
+                      : "text-zinc-400"
+                  }`}
+                />
+                <p className="text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
+                  Overtime Hours
+                </p>
+              </div>
+              <p
+                className={`text-3xl font-bold ${
+                  (report.trips?.reduce((s, t) => s + (t.overtime_hours || 0), 0) || 0) > 0
+                    ? "text-red-600 dark:text-red-400"
+                    : "text-zinc-900 dark:text-white"
+                }`}
+              >
+                {report.trips?.reduce((s, t) => s + (t.overtime_hours || 0), 0) > 0 
+                  ? fmtOvertime(report.trips.reduce((s, t) => s + (t.overtime_hours || 0), 0))
+                  : "—"}
+              </p>
+              <p className="text-xs text-zinc-400 mt-1">hours in period</p>
             </div>
 
             {/* Limit Status */}
