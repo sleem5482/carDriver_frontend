@@ -25,7 +25,8 @@ type Filters = {
   date_from: string;
   date_to: string;
   plate_number: string;
-  driver_name: string;
+  driver_id: string;
+  vehicle_id: string;
   status: string;
   verification_status: string;
 };
@@ -34,17 +35,10 @@ const EMPTY_FILTERS: Filters = {
   date_from: "",
   date_to: "",
   plate_number: "",
-  driver_name: "",
+  driver_id: "",
+  vehicle_id: "",
   status: "",
   verification_status: "",
-};
-
-const matchesDriverName = (fullName: string, query: string) => {
-  const trimmed = query.trim();
-  if (!trimmed) return true;
-  const words = trimmed.toLowerCase().split(/\s+/);
-  const name = (fullName ?? "").toLowerCase();
-  return words.every((word) => name.includes(word));
 };
 
 // ─── Badge helpers ────────────────────────────────────────────────────────────
@@ -77,11 +71,10 @@ export default function TripsPage() {
   const [applied, setApplied] = useState<Filters>(EMPTY_FILTERS);
   const [showFilters, setShowFilters] = useState(false);
 
-  const activeFilterCount = Object.values(applied).filter(Boolean).length;
+  const [drivers, setDrivers] = useState<{ id: string; full_name: string }[]>([]);
+  const [vehicles, setVehicles] = useState<{ id: string; plate_number: string; make: string; model: string }[]>([]);
 
-  const filteredTrips = trips.filter((t) =>
-    matchesDriverName(t.driver?.full_name ?? "", applied.driver_name)
-  );
+  const activeFilterCount = Object.values(applied).filter(Boolean).length;
 
   const fetchTrips = useCallback(async (f: Filters) => {
     setIsLoading(true);
@@ -90,11 +83,12 @@ export default function TripsPage() {
       if (f.date_from)            params.date_from            = f.date_from;
       if (f.date_to)              params.date_to              = f.date_to;
       if (f.plate_number.trim())  params.plate_number         = f.plate_number.trim();
+      if (f.driver_id)            params.driver_id            = f.driver_id;
+      if (f.vehicle_id)           params.vehicle_id           = f.vehicle_id;
       if (f.status)               params.status               = f.status;
       if (f.verification_status)  params.verification_status  = f.verification_status;
 
       const res = await api.get("/admin/trips", { params });
-      // console.log("hello from slemm hashme_______________",res.data)
       setTrips(res.data);
     } catch (err) {
       console.error("Failed to fetch trips", err);
@@ -104,11 +98,29 @@ export default function TripsPage() {
   }, []);
 
   useEffect(() => {
+    const fetchOptions = async () => {
+      try {
+        const [dRes, vRes] = await Promise.all([
+          api.get("/admin/users/?role=DRIVER"),
+          api.get("/admin/vehicles")
+        ]);
+        setDrivers(dRes.data);
+        setVehicles(vRes.data);
+      } catch (err) {
+        console.error("Failed to fetch filter options", err);
+      }
+    };
+    fetchOptions();
+  }, []);
+
+  useEffect(() => {
     fetchTrips(applied);
   }, [
     applied.date_from,
     applied.date_to,
     applied.plate_number,
+    applied.driver_id,
+    applied.vehicle_id,
     applied.status,
     applied.verification_status,
     fetchTrips,
@@ -213,19 +225,34 @@ export default function TripsPage() {
                 </div>
               </div>
 
-              {/* Driver Name (client-side only) */}
+              {/* Driver Dropdown */}
               <div className="space-y-1.5">
-                <label className={labelCls}>Driver Name</label>
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-zinc-400 pointer-events-none" />
-                  <input
-                    type="text"
-                    placeholder="e.g. John Smith"
-                    value={filters.driver_name}
-                    onChange={e => setFilters(f => ({ ...f, driver_name: e.target.value }))}
-                    className={`${inputCls} pl-8`}
-                  />
-                </div>
+                <label className={labelCls}>Driver</label>
+                <select
+                  value={filters.driver_id}
+                  onChange={e => setFilters(f => ({ ...f, driver_id: e.target.value }))}
+                  className={inputCls}
+                >
+                  <option value="">All Drivers</option>
+                  {drivers.map(d => (
+                    <option key={d.id} value={d.id}>{d.full_name}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Vehicle Dropdown */}
+              <div className="space-y-1.5">
+                <label className={labelCls}>Vehicle</label>
+                <select
+                  value={filters.vehicle_id}
+                  onChange={e => setFilters(f => ({ ...f, vehicle_id: e.target.value }))}
+                  className={inputCls}
+                >
+                  <option value="">All Vehicles</option>
+                  {vehicles.map(v => (
+                    <option key={v.id} value={v.id}>{v.plate_number} ({v.make} {v.model})</option>
+                  ))}
+                </select>
               </div>
 
               {/* Trip Status */}
@@ -242,34 +269,19 @@ export default function TripsPage() {
                 </select>
               </div>
 
-              {/* Verification Status */}
-              {/* <div className="space-y-1.5">
-                <label className={labelCls}>Verification</label>
-                <select
-                  value={filters.verification_status}
-                  onChange={e => setFilters(f => ({ ...f, verification_status: e.target.value }))}
-                  className={inputCls}
-                >
-                  <option value="">All</option>
-                  <option value="PENDING_REVIEW">Pending Review</option>
-                  <option value="VERIFIED">Verified</option>
-                  <option value="EXCEPTION">Exception</option>
-                </select>
-              </div> */}
-
-              {/* Action buttons — aligned to bottom */}
-              <div className="flex items-end gap-2">
-                <button
-                  onClick={applyFilters}
-                  className="flex-1 py-2 bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold rounded-xl transition-colors shadow-[0_0_15px_rgba(59,130,246,0.25)]"
-                >
-                  Apply
-                </button>
+              {/* Action buttons */}
+              <div className="col-span-2 md:col-span-3 flex justify-end gap-3 mt-2">
                 <button
                   onClick={clearFilters}
-                  className="flex-1 py-2 text-sm font-medium text-zinc-600 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-white/5 rounded-xl border border-zinc-200 dark:border-white/10 transition-colors"
+                  className="px-6 py-2.5 text-sm font-medium text-zinc-600 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-white/5 rounded-xl border border-zinc-200 dark:border-white/10 transition-colors"
                 >
                   Reset
+                </button>
+                <button
+                  onClick={applyFilters}
+                  className="px-6 py-2.5 bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold rounded-xl transition-colors shadow-[0_0_15px_rgba(59,130,246,0.25)]"
+                >
+                  Apply Filters
                 </button>
               </div>
             </div>
@@ -281,7 +293,8 @@ export default function TripsPage() {
                 {applied.date_from && <Pill label={`From: ${applied.date_from}`} onRemove={() => setApplied(f => ({ ...f, date_from: "" }))} />}
                 {applied.date_to && <Pill label={`To: ${applied.date_to}`} onRemove={() => setApplied(f => ({ ...f, date_to: "" }))} />}
                 {applied.plate_number && <Pill label={`Plate: ${applied.plate_number}`} onRemove={() => setApplied(f => ({ ...f, plate_number: "" }))} />}
-                {applied.driver_name && <Pill label={`Driver: ${applied.driver_name}`} onRemove={() => setApplied(f => ({ ...f, driver_name: "" }))} />}
+                {applied.driver_id && <Pill label={`Driver: ${drivers.find(d => d.id === applied.driver_id)?.full_name || applied.driver_id}`} onRemove={() => setApplied(f => ({ ...f, driver_id: "" }))} />}
+                {applied.vehicle_id && <Pill label={`Vehicle: ${vehicles.find(v => v.id === applied.vehicle_id)?.plate_number || applied.vehicle_id}`} onRemove={() => setApplied(f => ({ ...f, vehicle_id: "" }))} />}
                 {applied.status && <Pill label={`Status: ${applied.status}`} onRemove={() => setApplied(f => ({ ...f, status: "" }))} />}
                 {applied.verification_status && <Pill label={`Verification: ${applied.verification_status}`} onRemove={() => setApplied(f => ({ ...f, verification_status: "" }))} />}
               </div>
@@ -305,12 +318,14 @@ export default function TripsPage() {
                   <th className={thCls}>Driver</th>
                   <th className={thCls}>Vehicle</th>
                   <th className={thCls}>Status</th>
-                  <th className={thCls}>Path</th>
+                  <th className={thCls}>Overtime</th>
+                  <th className={thCls}>KM Used</th>
+                  <th className={thCls}>Total Hours</th>
                   <th className={`${thCls} text-right`}>Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-zinc-100 dark:divide-white/5">
-                {filteredTrips.map((t) => (
+                {trips.map((t) => (
                   <tr key={t.id} className="hover:bg-zinc-50 dark:hover:bg-white/[0.025] transition-colors">
                     {/* Date */}
                     <td className="py-3.5 px-5 text-zinc-600 dark:text-zinc-300 whitespace-nowrap">
@@ -339,10 +354,27 @@ export default function TripsPage() {
                         {t.status}
                       </span>
                     </td>
-                    {/* Verification */}
+                    {/* Overtime */}
                     <td className="py-3.5 px-5">
-                      <span className={`inline-flex px-2.5 py-1 rounded-lg text-xs font-semibold border ${verifCls(t.verification_status)}`}>
-                        {t.route_notes}
+                      {t.overtime_hours ? (
+                        <span className="text-red-600 dark:text-red-400 font-medium bg-red-50 dark:bg-red-500/10 px-2 py-1 rounded-md text-xs">
+                          {t.overtime_hours}h
+                        </span>
+                      ) : (
+                        <span className="text-zinc-400 text-sm">—</span>
+                      )}
+                    </td>
+                    {/* KM Used */}
+                    <td className="py-3.5 px-5">
+                      <span className="text-zinc-900 dark:text-white font-medium">
+                        {t.km_used ? t.km_used.toLocaleString() : "0"}
+                      </span>
+                      <span className="text-xs text-zinc-400 ml-1">km</span>
+                    </td>
+                    {/* Total Hours */}
+                    <td className="py-3.5 px-5">
+                      <span className="text-zinc-600 dark:text-zinc-400 font-medium text-sm">
+                        {t.working_hours_formatted || "—"}
                       </span>
                     </td>
                     {/* Actions */}
@@ -355,7 +387,7 @@ export default function TripsPage() {
                     </td>
                   </tr>
                 ))}
-                {filteredTrips.length === 0 && (
+                {trips.length === 0 && (
                   <tr>
                     <td colSpan={6} className="py-16 text-center text-zinc-400 dark:text-zinc-500">
                       <Map className="w-10 h-10 mx-auto mb-3 opacity-30" />

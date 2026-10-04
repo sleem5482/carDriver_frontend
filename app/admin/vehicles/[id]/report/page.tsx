@@ -77,6 +77,7 @@ type Report = {
   category: string;
   status: string;
   monthly_km_limit: number | null;
+  daily_shift_hours: number | null;
   assigned_driver: AssignedDriver | null;
   date_from: string | null;
   date_to: string | null;
@@ -276,6 +277,22 @@ export default function VehicleReportPage() {
                   : "—"}
               </p>
               <p className="text-xs text-zinc-400 mt-1">km / month</p>
+            </div>
+
+            {/* Daily Shift */}
+            <div className="bg-white dark:bg-white/5 border border-zinc-200 dark:border-white/10 rounded-2xl p-5 shadow-sm">
+              <div className="flex items-center gap-2 mb-3">
+                <Clock className="w-4 h-4 text-emerald-500" />
+                <p className="text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
+                  Daily Shift
+                </p>
+              </div>
+              <p className="text-3xl font-bold text-zinc-900 dark:text-white">
+                {report.daily_shift_hours != null
+                  ? report.daily_shift_hours
+                  : "—"}
+              </p>
+              <p className="text-xs text-zinc-400 mt-1">hours / day</p>
             </div>
 
             {/* Overtime */}

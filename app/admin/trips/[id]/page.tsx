@@ -84,6 +84,14 @@ export default function TripDetailsPage() {
               <p className="text-zinc-900 dark:text-white font-medium">{trip.working_hours_formatted}</p>
             </div>
             <div>
+              <p className="text-xs text-zinc-500 uppercase">Overtime</p>
+              <p className="text-zinc-900 dark:text-white font-medium">
+                {trip.overtime_hours ? (
+                  <span className="text-red-500 bg-red-500/10 px-2 py-0.5 rounded text-sm">+{trip.overtime_hours}h</span>
+                ) : "-"}
+              </p>
+            </div>
+            <div>
               <p className="text-xs text-zinc-500 uppercase">KM Used</p>
               <p className="text-zinc-900 dark:text-white font-medium">{trip.km_used} km</p>
             </div>
@@ -113,11 +121,37 @@ export default function TripDetailsPage() {
             </div>
             <div className="col-span-1">
               <p className="text-xs text-zinc-500 uppercase">Start Location</p>
-              <p className="text-zinc-900 dark:text-white font-medium">{trip.start_location}</p>
+              {trip.start_latitude && trip.start_longitude ? (
+                <a
+                  href={`https://www.google.com/maps/search/?api=1&query=${trip.start_latitude},${trip.start_longitude}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-blue-600 dark:text-blue-400 hover:underline font-medium flex items-center gap-1"
+                >
+                  {trip.start_location}
+                </a>
+              ) : (
+                <p className="text-zinc-900 dark:text-white font-medium">{trip.start_location}</p>
+              )}
             </div>
             <div className="col-span-1">
               <p className="text-xs text-zinc-500 uppercase">End Location</p>
-              <p className="text-zinc-900 dark:text-white font-medium">{trip.end_location || '-'}</p>
+              {trip.end_location ? (
+                trip.end_latitude && trip.end_longitude ? (
+                  <a
+                    href={`https://www.google.com/maps/search/?api=1&query=${trip.end_latitude},${trip.end_longitude}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-blue-600 dark:text-blue-400 hover:underline font-medium flex items-center gap-1"
+                  >
+                    {trip.end_location}
+                  </a>
+                ) : (
+                  <p className="text-zinc-900 dark:text-white font-medium">{trip.end_location}</p>
+                )
+              ) : (
+                <p className="text-zinc-900 dark:text-white font-medium">-</p>
+              )}
             </div>
           </div>
         </div>

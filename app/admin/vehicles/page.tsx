@@ -15,6 +15,7 @@ type Vehicle = {
   plate_number: string;
   category: string;
   monthly_km: number | null;
+  daily_shift_hours: number | null;
   status: string;
 };
 
@@ -42,6 +43,7 @@ const emptyForm: Vehicle = {
   plate_number: "",
   category: "",
   monthly_km: null,
+  daily_shift_hours: null,
   status: "AVAILABLE",
 };
 
@@ -80,7 +82,7 @@ export default function VehiclesPage() {
   const openEditModal = (v: Vehicle) => {
     setEditingId(v.id!);
     setFormError(null);
-    setFormData({ vehicle_type: v.vehicle_type, make: v.make, model: v.model, plate_number: v.plate_number, category: v.category, monthly_km: v.monthly_km, status: v.status });
+    setFormData({ vehicle_type: v.vehicle_type, make: v.make, model: v.model, plate_number: v.plate_number, category: v.category, monthly_km: v.monthly_km, daily_shift_hours: v.daily_shift_hours, status: v.status });
     setIsModalOpen(true);
   };
 
@@ -229,6 +231,7 @@ export default function VehiclesPage() {
                   <th className="py-3 px-5 text-left font-semibold text-zinc-500 dark:text-zinc-400 text-xs uppercase tracking-wider">Type</th>
                   <th className="py-3 px-5 text-left font-semibold text-zinc-500 dark:text-zinc-400 text-xs uppercase tracking-wider">Category</th>
                   <th className="py-3 px-5 text-left font-semibold text-zinc-500 dark:text-zinc-400 text-xs uppercase tracking-wider">Monthly KM</th>
+                  <th className="py-3 px-5 text-left font-semibold text-zinc-500 dark:text-zinc-400 text-xs uppercase tracking-wider">Shift (hrs)</th>
                   <th className="py-3 px-5 text-left font-semibold text-zinc-500 dark:text-zinc-400 text-xs uppercase tracking-wider">Status</th>
                   <th className="py-3 px-5 text-center font-semibold text-zinc-500 dark:text-zinc-400 text-xs uppercase tracking-wider">Available</th>
                   <th className="py-3 px-5 text-right font-semibold text-zinc-500 dark:text-zinc-400 text-xs uppercase tracking-wider">Actions</th>
@@ -269,6 +272,17 @@ export default function VehiclesPage() {
                           <span className="inline-flex items-center gap-1 text-zinc-700 dark:text-zinc-300 font-medium">
                             {v.monthly_km.toLocaleString()}
                             <span className="text-xs text-zinc-400">km</span>
+                          </span>
+                        ) : (
+                          <span className="text-zinc-400">—</span>
+                        )}
+                      </td>
+                      {/* Shift Hours */}
+                      <td className="py-3.5 px-5">
+                        {v.daily_shift_hours != null ? (
+                          <span className="inline-flex items-center gap-1 text-zinc-700 dark:text-zinc-300 font-medium">
+                            {v.daily_shift_hours}
+                            <span className="text-xs text-zinc-400">h</span>
                           </span>
                         ) : (
                           <span className="text-zinc-400">—</span>
@@ -405,16 +419,29 @@ export default function VehiclesPage() {
                   </Field>
                 </div>
 
-                <Field label="Monthly KM Limit">
-                  <input
-                    type="number"
-                    min="0"
-                    value={formData.monthly_km ?? ""}
-                    onChange={e => setFormData({ ...formData, monthly_km: e.target.value === "" ? null : Number(e.target.value) })}
-                    className={inputCls}
-                    placeholder="e.g. 3000"
-                  />
-                </Field>
+                <div className="grid grid-cols-2 gap-3">
+                  <Field label="Monthly KM Limit">
+                    <input
+                      type="number"
+                      min="0"
+                      value={formData.monthly_km ?? ""}
+                      onChange={e => setFormData({ ...formData, monthly_km: e.target.value === "" ? null : parseFloat(e.target.value) })}
+                      className={inputCls}
+                      placeholder="e.g. 3000"
+                    />
+                  </Field>
+                  <Field label="Daily Shift (Hours)">
+                    <input
+                      type="number"
+                      min="0"
+                      step="0.1"
+                      value={formData.daily_shift_hours ?? ""}
+                      onChange={e => setFormData({ ...formData, daily_shift_hours: e.target.value === "" ? null : parseFloat(e.target.value) })}
+                      className={inputCls}
+                      placeholder="e.g. 8"
+                    />
+                  </Field>
+                </div>
 
                 <Field label="Status">
                   <select value={formData.status} onChange={e => setFormData({ ...formData, status: e.target.value })} className={inputCls}>
