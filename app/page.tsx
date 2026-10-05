@@ -17,7 +17,7 @@ export default function AdminEntryPoint() {
     // Hide splash screen after 10 seconds
     const timer = setTimeout(() => {
       setShowSplash(false);
-    }, 10000);
+    }, 4000);
     return () => clearTimeout(timer);
   }, []);
 
