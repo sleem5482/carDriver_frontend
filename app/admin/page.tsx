@@ -88,14 +88,15 @@ export default function AdminDashboard() {
     >
       {/* Hero Banner */}
       <div className="relative w-full h-64 rounded-3xl overflow-hidden shadow-2xl group">
-        <Image
-          src="/admin-icon.jpg"
-          alt="Admin Dashboard Cover"
-          fill
-          className="object-cover group-hover:scale-105 transition-transform duration-700 ease-in-out"
-          priority
+        <video
+          src="/splash_login.mp4"
+          autoPlay
+          loop
+          muted
+          playsInline
+          className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-in-out"
         />
-        <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/50 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/50 to-transparent z-10" />
         <div className="absolute inset-0 p-8 flex flex-col justify-center">
           <h1 className="text-4xl md:text-5xl font-extrabold text-white mb-2 drop-shadow-lg">
             Dashboard Overview

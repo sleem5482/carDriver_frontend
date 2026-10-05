@@ -173,12 +173,12 @@ export default function VehiclesPage() {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
           {/* App icon */}
-          <div className="w-14 h-14 rounded-2xl overflow-hidden shadow-lg ring-2 ring-blue-500/20 flex-shrink-0">
+          <div className="w-16 h-16 rounded-2xl overflow-hidden shadow-lg ring-2 ring-blue-500/20 flex-shrink-0">
             <Image
-              src="/admin-icon.jpg"
+              src="/icon.jpg"
               alt="Vehicle Fleet Admin"
-              width={56}
-              height={56}
+              width={80}
+              height={80}
               className="w-full h-full object-cover"
               priority
             />

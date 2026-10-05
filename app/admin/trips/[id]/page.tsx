@@ -83,7 +83,7 @@ export default function TripDetailsPage() {
             </div>
             <div>
               <p className="text-xs text-zinc-500 uppercase">Verification</p>
-              <p className="text-zinc-900 dark:text-white font-medium">{trip.verification_status}</p>
+              <p className="text-zinc-900 dark:text-white font-medium">{trip.verification_status} (soon)</p>
             </div>
             <div>
               <p className="text-xs text-zinc-500 uppercase">Date</p>
