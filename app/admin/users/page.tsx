@@ -24,7 +24,7 @@ type User = {
   id?: string;
   full_name: string;
   mobile_number: string;
-  email: string;
+  email?: string;
   role: string;
   status: string;
   notes?: string;
@@ -174,7 +174,7 @@ export default function UsersPage() {
     setFormData({
       full_name: fullUser.full_name,
       mobile_number: fullUser.mobile_number,
-      email: fullUser.email,
+      email: fullUser.email || "",
       role: fullUser.role,
       status: fullUser.status,
       notes: fullUser.notes,
@@ -212,7 +212,7 @@ export default function UsersPage() {
     const payload: Record<string, unknown> = {
       full_name: formData.full_name,
       mobile_number: formData.mobile_number,
-      email: formData.email,
+      email: formData.email || "",
       role: formData.role,
       status: formData.status,
       notes: formData.notes || "",
@@ -548,8 +548,8 @@ export default function UsersPage() {
 
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-1.5">
-                    <label className="text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase">Username / Email</label>
-                    <input required type="text" value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} className="w-full bg-zinc-50 dark:bg-black/40 border border-zinc-200 dark:border-white/10 rounded-xl px-4 py-2 text-zinc-900 dark:text-white focus:outline-none focus:border-blue-500/50" />
+                    <label className="text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase">Username / Email (Optional)</label>
+                    <input type="text" value={formData.email || ""} onChange={(e) => setFormData({ ...formData, email: e.target.value })} className="w-full bg-zinc-50 dark:bg-black/40 border border-zinc-200 dark:border-white/10 rounded-xl px-4 py-2 text-zinc-900 dark:text-white focus:outline-none focus:border-blue-500/50" />
                   </div>
                   <div className="space-y-1.5">
                     <label className="text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase">Mobile Number</label>
