@@ -52,12 +52,35 @@ const statusBadge = (status: string) => {
 const roleBadge =
   "px-3 py-1 text-xs font-semibold rounded-full bg-purple-100 dark:bg-purple-500/20 text-purple-700 dark:text-purple-400 border border-purple-200 dark:border-purple-500/30";
 
-const fmtDate = (iso?: string) => {
+const TZ = "Africa/Cairo";
+
+// Parse backend timestamps as UTC when they have no timezone info
+const parseUtc = (iso: string): Date => {
+  let s = iso.trim();
+  if (/^\d{4}-\d{2}-\d{2}$/.test(s)) s += "T00:00:00Z";
+  else if (!/(Z|[+-]\d{2}:?\d{2})$/i.test(s)) s += "Z";
+  s = s.replace(/(\.\d{3})\d+/, "$1");
+  return new Date(s);
+};
+
+const fmtDate = (iso?: string | null) => {
   if (!iso) return "—";
-  return new Date(iso).toLocaleString(undefined, {
-    dateStyle: "medium",
-    timeStyle: "short",
+  const d = parseUtc(iso);
+  if (isNaN(d.getTime())) return "—";
+
+  const date = d.toLocaleDateString("en-GB", {
+    timeZone: TZ,
+    year: "numeric",
+    month: "short",
+    day: "numeric",
   });
+  const time = d.toLocaleTimeString("en-US", {
+    timeZone: TZ,
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: true,
+  });
+  return `${date}, ${time}`;
 };
 
 // ─── Component ────────────────────────────────────────────────────────────────

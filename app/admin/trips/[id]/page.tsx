@@ -6,7 +6,44 @@ import { Loader2, ArrowLeft, Image as ImageIcon } from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import api from "../../../../lib/api";
+
 // ─── Helpers ─────────────────────────────────────────────────────────────────
+
+const TZ = "Africa/Cairo";
+
+// Parse backend timestamps as UTC when they have no timezone info
+const parseUtc = (iso: string): Date => {
+  let s = iso.trim();
+  if (/^\d{4}-\d{2}-\d{2}$/.test(s)) s += "T00:00:00Z";            // date only
+  else if (!/(Z|[+-]\d{2}:?\d{2})$/i.test(s)) s += "Z";             // no tz -> UTC
+  s = s.replace(/(\.\d{3})\d+/, "$1");                              // 6-digit fraction -> 3
+  return new Date(s);
+};
+
+const fmtDate = (iso?: string | null) => {
+  if (!iso) return "-";
+  const d = parseUtc(iso);
+  if (isNaN(d.getTime())) return "-";
+  return d.toLocaleDateString("en-GB", {
+    timeZone: TZ,
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+  });
+};
+
+const fmtTime = (iso?: string | null) => {
+  if (!iso) return "-";
+  const d = parseUtc(iso);
+  if (isNaN(d.getTime())) return "-";
+  return d.toLocaleTimeString("en-US", {
+    timeZone: TZ,
+    hour: "numeric",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: true,
+  });
+};
 
 const fmtOvertime = (hours: number) => {
   const totalMinutes = Math.round(hours * 60);
@@ -15,7 +52,6 @@ const fmtOvertime = (hours: number) => {
   const m = totalMinutes % 60;
   return m > 0 ? `${h}h ${m}m` : `${h}h`;
 };
-
 
 export default function TripDetailsPage() {
   const params = useParams();
@@ -87,11 +123,14 @@ export default function TripDetailsPage() {
             </div>
             <div>
               <p className="text-xs text-zinc-500 uppercase">Date</p>
-              <p className="text-zinc-900 dark:text-white font-medium">{trip.start_date}</p>
+              {/* start_date is a UTC calendar date; the real instant is start_server_time */}
+              <p className="text-zinc-900 dark:text-white font-medium">
+                {fmtDate(trip.start_server_time || trip.start_date)}
+              </p>
             </div>
             <div>
               <p className="text-xs text-zinc-500 uppercase">Working Hours</p>
-              <p className="text-zinc-900 dark:text-white font-medium">{trip.working_hours_formatted}</p>
+              <p className="text-zinc-900 dark:text-white font-medium">{trip.working_hours_formatted || "-"}</p>
             </div>
             <div>
               <p className="text-xs text-zinc-500 uppercase">Overtime</p>
@@ -103,18 +142,18 @@ export default function TripDetailsPage() {
             </div>
             <div>
               <p className="text-xs text-zinc-500 uppercase">KM Used</p>
-              <p className="text-zinc-900 dark:text-white font-medium">{trip.km_used} km</p>
+              <p className="text-zinc-900 dark:text-white font-medium">{trip.km_used ?? 0} km</p>
             </div>
             <div>
               <p className="text-xs text-zinc-500 uppercase">Start Time</p>
               <p className="text-zinc-900 dark:text-white font-medium">
-                {trip.start_server_time ? new Date(trip.start_server_time).toLocaleTimeString() : '-'}
+                {fmtTime(trip.start_server_time)}
               </p>
             </div>
             <div>
               <p className="text-xs text-zinc-500 uppercase">End Time</p>
               <p className="text-zinc-900 dark:text-white font-medium">
-                {trip.end_server_time ? new Date(trip.end_server_time).toLocaleTimeString() : '-'}
+                {fmtTime(trip.end_server_time)}
               </p>
             </div>
             {/* <div>

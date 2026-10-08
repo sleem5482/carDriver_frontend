@@ -47,6 +47,7 @@ type TripEntry = {
   driver_id?: string;
   driver_name: string;
   start_date: string;
+  start_server_time?: string; // real timestamp (if the API returns it)
   start_location?: string;
   end_location?: string;
   start_odometer?: number;
@@ -91,13 +92,72 @@ type Report = {
   trips: TripEntry[];
 };
 
+// ─── Date / time helpers (all display in Africa/Cairo) ────────────────────────
+
+const TZ = "Africa/Cairo";
+
+// Parse backend timestamps as UTC when they have no timezone info
+const parseUtc = (iso: string): Date => {
+  let s = iso.trim();
+  if (/^\d{4}-\d{2}-\d{2}$/.test(s)) s += "T00:00:00Z";            // date only
+  else if (!/(Z|[+-]\d{2}:?\d{2})$/i.test(s)) s += "Z";             // no tz -> UTC
+  s = s.replace(/(\.\d{3})\d+/, "$1");                              // 6-digit fraction -> 3
+  return new Date(s);
+};
+
+// "YYYY-MM-DD" in Cairo time
+const cairoYmd = (d: Date) =>
+  new Intl.DateTimeFormat("en-CA", {
+    timeZone: TZ,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(d);
+
+// e.g. "8 Oct 2026"
+const fmtDate = (iso?: string | null) => {
+  if (!iso) return "—";
+  const d = parseUtc(iso);
+  if (isNaN(d.getTime())) return "—";
+  return d.toLocaleDateString("en-GB", {
+    timeZone: TZ,
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+  });
+};
+
+// e.g. "8 Oct 2026, 12:07 AM"
+const fmtDateTime = (iso?: string | null) => {
+  if (!iso) return "—";
+  const d = parseUtc(iso);
+  if (isNaN(d.getTime())) return "—";
+  const date = d.toLocaleDateString("en-GB", {
+    timeZone: TZ,
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+  });
+  const time = d.toLocaleTimeString("en-US", {
+    timeZone: TZ,
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: true,
+  });
+  return `${date}, ${time}`;
+};
+
+// start_date from the backend is a UTC calendar date, so it can be a day behind Cairo.
+// The real instant is start_server_time; use it when available.
+const tripInstant = (t: TripEntry): string => t.start_server_time || t.start_date;
+
+// Default filter dates, based on the current day in Cairo
 function today() {
-  return new Date().toISOString().split("T")[0];
+  return cairoYmd(new Date());
 }
 
 function firstOfMonth() {
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-01`;
+  return `${cairoYmd(new Date()).slice(0, 7)}-01`;
 }
 
 const fmtOvertime = (hours: number) => {
@@ -133,10 +193,36 @@ export default function VehicleReportPage() {
     setError(null);
     setReport(null);
     try {
-      const res = await api.get(
-        `/admin/vehicles/${vehicleId}/report?date_from=${dateFrom}&date_to=${dateTo}`
-      );
-      setReport(res.data);
+      // The report API only returns start_date (a UTC date). The trips API returns the real
+      // start_server_time, so fetch both and merge by trip id to show the correct Cairo date.
+      const [res, tripsRes] = await Promise.all([
+        api.get(`/admin/vehicles/${vehicleId}/report?date_from=${dateFrom}&date_to=${dateTo}`),
+        api
+          .get("/admin/trips", {
+            params: { vehicle_id: vehicleId, date_from: dateFrom, date_to: dateTo },
+          })
+          .catch(() => null), // if this fails, fall back to start_date
+      ]);
+
+      const timeById = new Map<string, string>();
+      ((tripsRes?.data ?? []) as { id: string; start_server_time?: string }[]).forEach((t) => {
+        if (t.id && t.start_server_time) timeById.set(t.id, t.start_server_time);
+      });
+
+      const enrich = (t: TripEntry): TripEntry => ({
+        ...t,
+        start_server_time: t.start_server_time ?? timeById.get(t.trip_id),
+      });
+
+      const data: Report = res.data;
+      setReport({
+        ...data,
+        trips: (data.trips ?? []).map(enrich),
+        driver_reports: data.driver_reports?.map((dr) => ({
+          ...dr,
+          trips: (dr.trips ?? []).map(enrich),
+        })),
+      });
     } catch (err: unknown) {
       const e = err as { response?: { data?: { detail?: string } } };
       setError(
@@ -362,7 +448,7 @@ export default function VehicleReportPage() {
                     : "text-zinc-900 dark:text-white"
                 }`}
               >
-                {report.trips?.reduce((s, t) => s + (t.overtime_hours || 0), 0) > 0 
+                {report.trips?.reduce((s, t) => s + (t.overtime_hours || 0), 0) > 0
                   ? fmtOvertime(report.trips.reduce((s, t) => s + (t.overtime_hours || 0), 0))
                   : "—"}
               </p>
@@ -451,10 +537,7 @@ export default function VehicleReportPage() {
                   </p>
                 </div>
                 <p className="text-xs text-zinc-400">
-                  Since{" "}
-                  {new Date(
-                    report.assigned_driver.assigned_at
-                  ).toLocaleDateString()}
+                  Since {fmtDate(report.assigned_driver.assigned_at)}
                 </p>
               </div>
             </div>
@@ -519,9 +602,9 @@ export default function VehicleReportPage() {
                         <div className="flex flex-wrap gap-2">
                           {dr.assignments.map((assignment, aidx) => (
                             <div key={aidx} className={`text-xs px-2.5 py-1.5 rounded-lg border ${assignment.is_active ? 'bg-emerald-50 dark:bg-emerald-500/10 border-emerald-200 dark:border-emerald-500/20 text-emerald-700 dark:text-emerald-400' : 'bg-zinc-50 dark:bg-white/5 border-zinc-200 dark:border-white/10 text-zinc-600 dark:text-zinc-400'}`}>
-                              <span className="font-medium">{new Date(assignment.assigned_at).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' })}</span>
+                              <span className="font-medium">{fmtDateTime(assignment.assigned_at)}</span>
                               {' → '}
-                              <span className="font-medium">{assignment.unassigned_at ? new Date(assignment.unassigned_at).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' }) : 'Present'}</span>
+                              <span className="font-medium">{assignment.unassigned_at ? fmtDateTime(assignment.unassigned_at) : 'Present'}</span>
                             </div>
                           ))}
                         </div>
@@ -539,7 +622,7 @@ export default function VehicleReportPage() {
                               <div>
                                 <div className="flex items-center gap-2 mb-1.5">
                                   <Calendar className="w-4 h-4 text-zinc-400" />
-                                  <span className="text-sm font-medium text-zinc-900 dark:text-zinc-100">{t.start_date}</span>
+                                  <span className="text-sm font-medium text-zinc-900 dark:text-zinc-100">{fmtDate(tripInstant(t))}</span>
                                   {t.working_hours_formatted && (
                                     <span className="text-xs text-zinc-500 flex items-center gap-1 ml-2">
                                       <Clock className="w-3.5 h-3.5" />
@@ -712,7 +795,7 @@ export default function VehicleReportPage() {
                               className="hover:bg-zinc-50 dark:hover:bg-white/[0.025] transition-colors"
                             >
                               <td className="py-3 px-4 text-zinc-500 dark:text-zinc-400 text-xs">
-                                {t.start_date}
+                                {fmtDate(tripInstant(t))}
                               </td>
                               <td className="py-3 px-4 text-zinc-800 dark:text-zinc-200">
                                 {t.driver_name}

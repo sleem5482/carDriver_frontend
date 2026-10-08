@@ -63,10 +63,66 @@ const verifCls = (s: string) => {
   return "bg-zinc-500/15 text-zinc-400 border-zinc-500/30";
 };
 
-const fmtDate = (iso: string) => {
-  if (!iso) return "—";
-  return new Date(iso).toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" });
+// ─── Date / time helpers (all display in Africa/Cairo) ────────────────────────
+
+const TZ = "Africa/Cairo";
+const DAY_NAMES = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+
+// Parse backend timestamps as UTC when they have no timezone info
+const parseUtc = (iso: string): Date => {
+  let s = iso.trim();
+  if (/^\d{4}-\d{2}-\d{2}$/.test(s)) s += "T00:00:00Z";            // date only
+  else if (!/(Z|[+-]\d{2}:?\d{2})$/i.test(s)) s += "Z";             // no tz -> UTC
+  s = s.replace(/(\.\d{3})\d+/, "$1");                              // 6-digit fraction -> 3
+  return new Date(s);
 };
+
+// "YYYY-MM-DD" in Cairo time
+const cairoYmd = (d: Date) =>
+  new Intl.DateTimeFormat("en-CA", {
+    timeZone: TZ,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(d);
+
+const dowOfYmd = (ymd: string) => new Date(`${ymd}T00:00:00Z`).getUTCDay();
+
+// Week key = the Sunday of that week (Cairo date). Includes the year, so no collisions.
+// If your week starts on Saturday, use (dowOfYmd(ymd) + 1) % 7 instead.
+const weekKeyOf = (iso: string): string => {
+  const ymd = cairoYmd(parseUtc(iso));
+  const t = Date.parse(`${ymd}T00:00:00Z`) - dowOfYmd(ymd) * 86400000;
+  return new Date(t).toISOString().slice(0, 10);
+};
+
+const fmtDate = (iso?: string | null) => {
+  if (!iso) return "—";
+  const d = parseUtc(iso);
+  if (isNaN(d.getTime())) return "—";
+  return d.toLocaleDateString("en-GB", {
+    timeZone: TZ,
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+  });
+};
+
+function fmtTime(iso?: string | null): string {
+  if (!iso) return "—";
+  const d = parseUtc(iso);
+  if (isNaN(d.getTime())) return "—";
+  return d.toLocaleTimeString("en-US", {
+    timeZone: TZ,
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: true,
+  });
+}
+
+// start_date from the backend is a UTC calendar date, so it can be a day behind Cairo.
+// The real instant is start_server_time; use it for the date, day name, sorting and weeks.
+const tripInstant = (t: Trip): string => t.start_server_time || t.start_date;
 
 const fmtOvertime = (hours: number) => {
   const totalMinutes = Math.round(hours * 60);
@@ -76,34 +132,31 @@ const fmtOvertime = (hours: number) => {
   return m > 0 ? `${h}h ${m}m` : `${h}h`;
 };
 
-const DAY_NAMES = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+// ─── Excel export ─────────────────────────────────────────────────────────────
 
-function getWeekNumber(dateStr: string): number {
-  const d = new Date(dateStr);
-  const startOfYear = new Date(d.getFullYear(), 0, 1);
-  return Math.ceil(((d.getTime() - startOfYear.getTime()) / 86400000 + startOfYear.getDay() + 1) / 7);
-}
-
-function fmtTime(isoStr?: string): string {
-  if (!isoStr) return "—";
-  const d = new Date(isoStr);
-  return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", hour12: false });
-}
-
-function exportTripsToExcel(trips: Trip[], applied: Filters, drivers: { id: string; full_name: string }[], vehicles: { id: string; plate_number: string; make: string; model: string }[]) {
+function exportTripsToExcel(
+  trips: Trip[],
+  applied: Filters,
+  drivers: { id: string; full_name: string }[],
+  vehicles: { id: string; plate_number: string; make: string; model: string }[]
+) {
   const driverName = applied.driver_id ? drivers.find(d => d.id === applied.driver_id)?.full_name ?? "" : "";
-  const vehicleName = applied.vehicle_id ? (() => { const v = vehicles.find(v => v.id === applied.vehicle_id); return v ? `${v.plate_number} (${v.make} ${v.model})` : ""; })() : "";
+  const vehicleName = applied.vehicle_id
+    ? (() => { const v = vehicles.find(v => v.id === applied.vehicle_id); return v ? `${v.plate_number} (${v.make} ${v.model})` : ""; })()
+    : "";
   const periodFrom = applied.date_from || "—";
   const periodTo = applied.date_to || "—";
   const subtitle = driverName ? `Driver: ${driverName}` : vehicleName ? `Vehicle: ${vehicleName}` : "All Trips";
 
-  // Sort trips by date ascending
-  const sortedTrips = [...trips].sort((a, b) => new Date(a.start_date).getTime() - new Date(b.start_date).getTime());
+  // Sort ascending by real UTC instant
+  const sortedTrips = [...trips].sort(
+    (a, b) => parseUtc(tripInstant(a)).getTime() - parseUtc(tripInstant(b)).getTime()
+  );
 
-  // Group trips by ISO week
-  const weeks: { weekKey: number; trips: Trip[] }[] = [];
+  // Group by week (Cairo dates)
+  const weeks: { weekKey: string; trips: Trip[] }[] = [];
   sortedTrips.forEach(t => {
-    const wk = getWeekNumber(t.start_date);
+    const wk = weekKeyOf(tripInstant(t));
     let group = weeks.find(w => w.weekKey === wk);
     if (!group) { group = { weekKey: wk, trips: [] }; weeks.push(group); }
     group.trips.push(t);
@@ -117,11 +170,9 @@ function exportTripsToExcel(trips: Trip[], applied: Filters, drivers: { id: stri
   const totStyle = `background-color:#e8f0fe;font-weight:bold;border:1px solid #aaa;padding:5px 10px;text-align:center;font-size:12px;`;
 
   const buildRow = (t: Trip) => {
-    // console.log(t)
-    const d = new Date(t.start_date);
-    const dayName = DAY_NAMES[d.getDay()];
+    const dayName = DAY_NAMES[dowOfYmd(cairoYmd(parseUtc(tripInstant(t))))];
     return `<tr>
-      <td style="${tdStyle}">${t.start_date}</td>
+      <td style="${tdStyle}">${fmtDate(tripInstant(t))}</td>
       <td style="${tdStyle}">${dayName}</td>
       <td style="${tdStyle}">${t.driver?.full_name ?? "—"}</td>
       <td style="${tdStyle}">${t.vehicle ? `${t.vehicle.make} ${t.vehicle.model} - ${t.vehicle.plate_number}` : "—"}</td>
@@ -135,7 +186,7 @@ function exportTripsToExcel(trips: Trip[], applied: Filters, drivers: { id: stri
   };
 
   const rows = weeks.map((wk, i) => [
-    ...wk.trips.map(t => buildRow(t)),
+    ...wk.trips.map(buildRow),
     i < weeks.length - 1 ? `<tr><td colspan="10" style="height:10px;border:none;"></td></tr>` : ""
   ].join("")).join("");
 
@@ -167,7 +218,7 @@ function exportTripsToExcel(trips: Trip[], applied: Filters, drivers: { id: stri
     </tr>
   </tbody>
 </table>
-<p style="text-align:center;font-size:10px;color:#999;margin-top:14px;">Generated: ${new Date().toLocaleDateString()} &bull; Prepared by: Administration</p>
+<p style="text-align:center;font-size:10px;color:#999;margin-top:14px;">Generated: ${fmtDate(new Date().toISOString())} &bull; Prepared by: Administration</p>
 </body></html>`;
 
   const blob = new Blob([html], { type: "application/vnd.ms-excel;charset=utf-8" });
@@ -449,7 +500,7 @@ export default function TripsPage() {
                   <tr key={t.id} className="hover:bg-zinc-50 dark:hover:bg-white/[0.025] transition-colors">
                     {/* Date */}
                     <td className="py-3.5 px-5 text-zinc-600 dark:text-zinc-300 whitespace-nowrap">
-                      {fmtDate(t.start_date)}
+                      {fmtDate(tripInstant(t))}
                     </td>
                     {/* Driver */}
                     <td className="py-3.5 px-5">
@@ -509,7 +560,7 @@ export default function TripsPage() {
                 ))}
                 {trips.length === 0 && (
                   <tr>
-                    <td colSpan={6} className="py-16 text-center text-zinc-400 dark:text-zinc-500">
+                    <td colSpan={8} className="py-16 text-center text-zinc-400 dark:text-zinc-500">
                       <Map className="w-10 h-10 mx-auto mb-3 opacity-30" />
                       <p className="font-medium">No trips found</p>
                       {activeFilterCount > 0 && (
@@ -572,7 +623,7 @@ function SearchableSelect({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const filteredOptions = options.filter(o => 
+  const filteredOptions = options.filter(o =>
     o.label.toLowerCase().includes(search.toLowerCase())
   );
 
@@ -589,7 +640,7 @@ function SearchableSelect({
         </span>
         <ChevronDown className="w-4 h-4 text-zinc-400 shrink-0 ml-2" />
       </div>
-      
+
       {isOpen && (
         <div className="absolute z-50 w-full mt-1 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-white/10 rounded-xl shadow-lg max-h-60 flex flex-col">
           <div className="p-2 border-b border-zinc-100 dark:border-white/10 shrink-0">
@@ -641,4 +692,3 @@ function SearchableSelect({
     </div>
   );
 }
-
